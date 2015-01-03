@@ -1,5 +1,6 @@
 # Site settings
 title: De datorum scientia
+tagline: thoughts about data-science
 #email: nicolas.grislain@gmail.com
 description: > # this means to ignore newlines until "baseurl:"
   A blog to write down thoughts about data-science
