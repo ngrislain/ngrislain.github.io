@@ -3,8 +3,8 @@ layout: post
 title: Hello world
 ---
 
-Hello $x^2$ world
-
+Hello world
+$$x^2$$
 $$M = \left( \begin{smallmatrix}
   1&0\\
   0&1
