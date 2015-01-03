@@ -4,4 +4,4 @@ title: Hello world
 ---
 
 Hello
-$$x^2$$
+$x^2$
