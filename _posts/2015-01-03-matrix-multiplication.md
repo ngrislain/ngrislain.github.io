@@ -1,10 +1,8 @@
 ---
 layout: post
-title: Hello world
+title: Matrix multiplication
 ---
 
-Hello world
-$$x^2$$
 $$M = \left( \begin{smallmatrix}
   1&0\\
   0&1
