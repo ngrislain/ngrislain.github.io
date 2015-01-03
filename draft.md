@@ -10,9 +10,9 @@ $$M = \left( \begin{smallmatrix}
 \end{smallmatrix} \right)
 \cdot
 \left( \begin{smallmatrix}
-  \hdots & b_1 & \hdots\\
-  \hdots & b_2 & \hdots\\
+  \dots & b_1 & \dots\\
+  \dots & b_2 & \dots\\
    & \vdots & \\
-  \hdots & b_n & \hdots\\
+  \dots & b_n & \dots\\
 \end{smallmatrix} \right)
 $$
