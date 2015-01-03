@@ -3,7 +3,9 @@ layout: post
 title: Hello world
 ---
 
-Hello
-$x^2$
+Hello $x^2$ world
 
-$[[1,0],[0,1]]$
+$$M = \left( \begin{smallmatrix}
+  1&0\\
+  0&1
+\end{smallmatrix} \right)$$
