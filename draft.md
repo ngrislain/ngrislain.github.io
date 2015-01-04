@@ -4,9 +4,9 @@ title: The sum of n
 ---
 
 Let's compute the sum of $$n$$
-$$\sum_{i>0}n$$
+$$\sum_{n>0}n$$
 For this computation let's add a small imaginary perturbation
-$$\sum_{i>0}{n+\epsilon{}i}$$
+$$\sum_{n>0}{n\left(1+\epsilon{}i\right)}$$
 
 $$M = \left( \begin{smallmatrix}
   \vdots & \vdots &  & \vdots\\
