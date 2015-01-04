@@ -12,6 +12,9 @@ $$\sum_{n>0}{n^{1+\epsilon{}i}}$$
 It yields:
 $$\sum_{n>0}e^{(1+\epsilon{}i)\ln(n)} = \sum_{n>0}ne^{\epsilon{}\ln(n)i}$$
 
+Let's set $$\epsilon = \frac1z$$
+$$\sum_{n>0}e^{(1+\epsilon{}i)\ln(n)} = \sum_{n>0}ne^{\epsilon{}\ln(n)i}$$
+
 $$M = \left( \begin{smallmatrix}
   \vdots & \vdots &  & \vdots\\
   a_1 & a_2 & \cdots & a_n\\
