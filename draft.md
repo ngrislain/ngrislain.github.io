@@ -10,7 +10,7 @@ For this computation let's add a small imaginary perturbation to the exponent
 $$\sum_{n>0}{n^{1+\epsilon{}i}}$$
 
 It yields:
-$$\sum_{n>0}{e^{1+\epsilon{}i}\ln(n)}$$
+$$\sum_{n>0}{e^{(1+\epsilon{}i)\ln(n)}}$$
 
 $$M = \left( \begin{smallmatrix}
   \vdots & \vdots &  & \vdots\\
