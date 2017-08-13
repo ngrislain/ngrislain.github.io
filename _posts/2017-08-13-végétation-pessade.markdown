@@ -22,4 +22,6 @@ nous avons vu:
 * Des [hêtres](https://fr.wikipedia.org/wiki/H%C3%AAtre_commun)
 ![hêtres]({{ site.url }}/assets/IMG_6447.JPG)
 * Des [sapins](https://fr.wikipedia.org/wiki/H%C3%AAtre_commun)
-[ici]({{ site.url }}/assets/IMG_6442.JPG)
+![sapins]({{ site.url }}/assets/IMG_6442.JPG)
+* Probablement des [tussilages](https://fr.wikipedia.org/wiki/Tussilage)
+![tussilages]({{ site.url }}/assets/IMG_6441.JPG)
