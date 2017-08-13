@@ -17,3 +17,5 @@ author:
 version:          1.0.0
 github:
   repo:           https://github.com/ngrislain/ngrislain.github.io
+
+theme: jekyll-theme-cayman
