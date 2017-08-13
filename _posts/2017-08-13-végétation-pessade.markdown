@@ -20,8 +20,21 @@ Cet été nous avons passé une semaine à [Pessade](https://www.google.fr/maps/
 Entre autre [flore du massif central](https://fr.wikipedia.org/wiki/Flore_du_Massif_central)
 nous avons vu:
 * Des [hêtres](https://fr.wikipedia.org/wiki/H%C3%AAtre_commun)
+
 ![hêtres]({{ site.url }}/assets/IMG_6447.JPG)
+
 * Des [sapins](https://fr.wikipedia.org/wiki/H%C3%AAtre_commun)
+
 ![sapins]({{ site.url }}/assets/IMG_6442.JPG)
+
 * Probablement des [tussilages](https://fr.wikipedia.org/wiki/Tussilage)
+
 ![tussilages]({{ site.url }}/assets/IMG_6441.JPG)
+
+* Du [sureau rouge](https://fr.wikipedia.org/wiki/Sambucus_racemosa)
+
+![sureau rouge]({{ site.url }}/assets/IMG_6443.JPG)
+
+* Du [genêt à balais](https://fr.wikipedia.org/wiki/Gen%C3%AAt_%C3%A0_balais)
+
+![genêt à balais]({{ site.url }}/assets/IMG_6451.JPG)
