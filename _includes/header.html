@@ -1,0 +1,74 @@
+{% assign default_paths = site.pages | map: "path" %}
+{% assign page_paths = site.header_pages | default: default_paths %}
+<dt-header>
+  <style>
+    dt-header {
+      display: block;
+      position: relative;
+      height: 60px;
+      background-color: hsl(200, 60%, 15%);
+      width: 100%;
+      box-sizing: border-box;
+      z-index: 2;
+      color: rgba(0, 0, 0, 0.8);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    }
+    dt-header a {
+      font-size: 16px;
+      height: 60px;
+      line-height: 60px;
+      text-decoration: none;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 22px 0;
+    }
+    dt-header a:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+    dt-header .logo {
+      width: 100px;
+      position:absolute;
+      top: 16px;
+      margin-right: 16px;
+      font-size: 17px;
+      font-weight: 200;
+    }
+    @media(min-width: 1080px) {
+      dt-header {
+        height: 70px;
+      }
+      dt-header a {
+        height: 70px;
+        line-height: 70px;
+        padding: 28px 0;
+      }
+      dt-header .logo {
+        width: 100px;
+        top: 20px;
+        margin-right: 20px;
+      }
+    }
+    dt-header .nav {
+      float: right;
+      font-weight: 300;
+    }
+    dt-header .nav a {
+      font-size: 12px;
+      margin-left: 24px;
+      text-transform: uppercase;
+    }
+  </style>
+  <div class="l-page">
+    <a href="/">Home</a>
+    {% if page_paths %}
+    <div class="nav">
+      {% for path in page_paths %}
+        {% assign pages = site.pages | where: "path", path | first %}
+        {% if pages.title %}
+        <a href="{{ pages.url | relative_url }}">{{ pages.title | escape }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</dt-header>
