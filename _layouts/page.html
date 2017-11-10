@@ -1,0 +1,25 @@
+---
+layout: default
+---
+<script type="text/front-matter">
+  title: "{{ page.title }}"
+  description: "{{ page.description }}"
+  authors:
+  {% for author in page.authors %}- {{author.name}}: {{author.address}}{% endfor %}
+  affiliations:
+  {% for affiliation in page.affiliations %}- {{affiliation.name}}: {{affiliation.address}}{% endfor %}
+</script>
+<dt-article>
+  <h1>{{ page.title | escape }}</h1>
+  <h2>{{ page.description | escape }}</h2>
+  <dt-byline></dt-byline>
+  {{ content }}
+  {% if site.disqus.shortname %}
+    {% include disqus_comments.html %}
+  {% endif %}
+</dt-article>
+<dt-appendix>
+</dt-appendix>
+<script type="text/bibliography">
+  {{ page.bibliography }}
+</script>
