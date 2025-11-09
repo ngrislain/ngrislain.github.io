@@ -1,4 +1,8 @@
-.DS_Store
 .lake/
 build/
 lake-packages/
+
+.DS_Store
+*.png
+static/projects/.DS_Store
+static/projects/*.png
