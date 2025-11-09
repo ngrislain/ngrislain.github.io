@@ -3,7 +3,7 @@ import Site.Front
 import Site.About
 import Site.Theme
 import Site.Projects
-import Site.Projects.PyxelWorkshop
+import Site.Projects.Adventure
 
 open Verso Genre Blog Site Syntax
 
@@ -12,7 +12,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "projects" Site.Projects with
-      Site.Projects.PyxelWorkshop
+      Site.Projects.Adventure
 
 def main :=
   blogMain Site.chalkTheme personalSite
