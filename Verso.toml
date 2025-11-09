@@ -1,0 +1,4 @@
+title = "Personal Website"
+author = "NGrislain"
+site.url = "https://ngrislain.github.io"
+output = "build"
