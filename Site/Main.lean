@@ -4,6 +4,7 @@ import Site.About
 import Site.Theme
 import Site.Projects
 import Site.Projects.Adventure
+import Site.Projects.AIEconomics
 
 open Verso Genre Blog Site Syntax
 
@@ -12,6 +13,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "projects" Site.Projects with
+      Site.Projects.AIEconomics
       Site.Projects.Adventure
 
 def main :=

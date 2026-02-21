@@ -2,5 +2,7 @@
 build/
 lake-packages/
 
+.playwright-mcp
+
 .DS_Store
 static/projects/.DS_Store

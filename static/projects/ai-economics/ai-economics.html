@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Die Optimally — A Theory of Consumption When AI Takes Your Job</title>
+  <link rel="stylesheet" href="https://latex.vercel.app/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <style>
+    body { max-width: 80ch; margin: 0 auto; padding: 2rem 1rem; overflow-x: auto; }
+    header { text-align: center; margin-bottom: 3rem; }
+    header h1 { font-size: 1.6rem; margin-bottom: 0.3rem; }
+    .subtitle { font-size: 1.15rem; margin: 0.2rem 0; font-style: italic; }
+    .author { font-variant: small-caps; font-size: 1.1rem; margin: 0.5rem 0 0.2rem; }
+    .date { font-style: italic; color: #555; }
+    .abstract { text-align: justify; margin: 2rem 3rem; font-size: 0.95rem; }
+    .abstract-title { text-align: center; font-weight: bold; margin-bottom: 0.5rem; }
+    article { counter-reset: section; }
+    section > h2 { counter-increment: section; }
+    section > h2::before { content: counter(section) ". "; }
+    section { margin-top: 2.5rem; }
+
+    /* --- Controls: live directly on the white left margin --- */
+    #controls-panel {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      width: 220px;
+      background: #f9fafb; /* fallback; JS matches exact body color */
+      padding: 0 1.2rem 1.5rem 1rem;
+      overflow-y: auto;
+      box-shadow: none;
+      /* clip-path lets shadow extend only rightward, never top/bottom/left */
+      clip-path: inset(0 -40px 0 0);
+      transition: box-shadow 0.3s ease;
+    }
+    @media (max-width: 1099px) {
+      #controls-panel { box-shadow: 6px 0 20px rgba(0,0,0,0.12); }
+      body { padding-left: 232px; }
+    }
+    .controls-header { margin-bottom: 0.8rem; }
+    .controls-header h3 { margin: 0; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; font-weight: 600; }
+    #btn-reset {
+      display: block; width: 100%; margin-top: 0.8rem; padding: 0.4rem 0;
+      cursor: pointer; font-size: 0.78rem; font-weight: 600;
+      color: #fff; background: #2171b5; border: none; border-radius: 3px;
+      letter-spacing: 0.02em;
+    }
+    #btn-reset:hover { background: #1a5a94; }
+    .controls-grid { display: grid; grid-template-columns: 1fr; gap: 0.55rem; }
+    .control-group label { font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.1rem; color: #444; }
+    .slider-row { display: flex; align-items: center; gap: 0.4rem; }
+    .slider-row input[type="range"] { flex: 1; accent-color: #2171b5; height: 16px; }
+    .val { font-family: 'Latin Modern Mono', monospace; font-size: 0.78rem; min-width: 3rem; text-align: right; color: #555; }
+    .solution-badges { display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid #e5e5e5; }
+    .badge { font-size: 0.78rem; font-family: 'Latin Modern Mono', monospace; color: #555; padding: 0.1rem 0; }
+    .badge.warning { color: #c22; font-size: 0.72rem; }
+
+    figure.plot { margin: 1.5rem 0; text-align: center; }
+    figure.plot figcaption { font-size: 0.9rem; color: #555; margin-top: 0.5rem; font-style: italic; }
+    /* Override latex.css figure numbering — we handle it ourselves */
+    figure.plot { counter-increment: figure; counter-reset: none; }
+    figure.plot figcaption::before { content: "Figure " counter(figure) ". "; font-weight: bold; font-style: normal; }
+    body { counter-reset: figure; }
+    figure.plot svg { width: 100%; max-width: 620px; }
+    .tooltip-box { position: absolute; background: rgba(255,255,255,0.95); border: 1px solid #999; border-radius: 3px; padding: 4px 8px; font-size: 11px; pointer-events: none; font-family: 'Latin Modern Mono', monospace; }
+    @media (max-width: 768px) {
+      body { padding: 1rem 0.5rem; padding-left: 195px; }
+      .abstract { margin: 1.5rem 1rem; }
+      #controls-panel { width: 180px; padding: 1rem 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<article>
+  <header>
+    <h1>How to Die Optimally</h1>
+    <p class="subtitle">A Theory of Consumption When AI Takes Your Job</p>
+    <p class="author"><a href="https://www.linkedin.com/in/kalantzis/">Yannick Kalantzis</a> &amp; <a href="https://www.linkedin.com/in/nicolas-grislain/">Nicolas Grislain</a></p>
+    <p class="date">February 2026</p>
+    <div class="abstract">
+      <p class="abstract-title">Abstract</p>
+      <p>We study optimal consumption and end-of-life timing for an
+      agent facing exponentially declining labor income in a world
+      where the return to capital exceeds the rate of time preference.
+      When the present value of labor income falls short of that of a
+      subsistence floor, the agent necessarily dies in finite
+      time. Using Hamiltonian methods, we derive the optimal time of
+      death and consumption path and compare it to that of
+      hand-to-mouth agent. We show that the agent optimally trades off
+      much lower consumption in the short run, against increasing
+      consumption over a longer time span in the medium
+      run. Interactive visualizations illustrate the solution&rsquo;s
+      sensitivity to key parameters.</p>
+    </div>
+  </header>
+
+  <div id="controls-panel">
+    <div class="controls-header">
+      <h3>Parameters</h3>
+    </div>
+    <div class="controls-grid">
+      <div class="control-group"><label>Interest rate <i>r</i></label><div class="slider-row"><input type="range" class="param-slider" name="r" min="0.01" max="0.20" step="0.0005" value="0.08"><span class="val" id="v-r">0.080</span></div></div>
+      <div class="control-group"><label>Discount rate &rho;</label><div class="slider-row"><input type="range" class="param-slider" name="rho" min="0.01" max="0.15" step="0.0005" value="0.03"><span class="val" id="v-rho">0.030</span></div></div>
+      <div class="control-group"><label>Income decay &eta;</label><div class="slider-row"><input type="range" class="param-slider" name="eta" min="0.001" max="0.20" step="0.0005" value="0.10"><span class="val" id="v-eta">0.100</span></div></div>
+      <div class="control-group"><label>Initial wage <i>w</i></label><div class="slider-row"><input type="range" class="param-slider" name="w" min="0.5" max="5.0" step="0.005" value="2.0"><span class="val" id="v-w">2.00</span></div></div>
+      <div class="control-group"><label>Subsistence <i>d</i></label><div class="slider-row"><input type="range" class="param-slider" name="d" min="0.1" max="3.0" step="0.005" value="1.0"><span class="val" id="v-d">1.00</span></div></div>
+      <div class="control-group"><label>Alive utility <i>A</i></label><div class="slider-row"><input type="range" class="param-slider" name="A" min="0" max="20.0" step="0.005" value="3.0"><span class="val" id="v-A">3.00</span></div></div>
+      <div class="control-group"><label>Return growth &gamma;/&eta;</label><div class="slider-row"><input type="range" class="param-slider" name="gammaOverEta" min="0" max="2.0" step="0.01" value="2"><span class="val" id="v-gammaOverEta">2.00</span></div></div>
+    </div>
+    <button id="btn-reset">Reset defaults</button>
+    <div class="solution-badges">
+      <span class="badge">&epsilon;* = <span id="b-eps">&mdash;</span></span>
+      <span class="badge">T* = <span id="b-T">&mdash;</span></span>
+      <span class="badge">T<sub>A</sub> = <span id="b-TA">&mdash;</span></span>
+      <span class="badge">V* = <span id="b-V">&mdash;</span></span>
+      <span class="badge">V<sub>A</sub> = <span id="b-VA">&mdash;</span></span>
+      <span class="badge" id="b-status" style="display:none"></span>
+    </div>
+  </div>
+
+  <section>
+    <h2>Introduction</h2>
+    <p>There is a particular kind of optimism in economics that allows one to write down a model in which the agent rationally plans their own demise, solves a Hamiltonian, and dies at the welfare-maximising moment&mdash;and to call this a &ldquo;solution.&rdquo; This paper is an exercise in that tradition.</p>
+    <p>The premise is simple and, depending on your employment situation, either abstract or terrifyingly concrete: an economic agent earns labour income that is being destroyed by technological progress. The income decays exponentially&mdash;think of a translator watching neural machine translation improve, a taxi driver contemplating autonomous vehicles, or, increasingly, a programmer observing that the AI writing this paper can also write code. The agent must consume above a subsistence floor to remain &ldquo;alive&rdquo; (economically active), can save at an interest rate that exceeds their rate of time preference, and must eventually face the arithmetic: lifetime income cannot fund subsistence forever.</p>
+    <p>The question we ask is not <em>whether</em> the agent
+    dies&mdash;that is determined by the intertemporal budget constraint&mdash;but <em>when</em> and <em>how</em>. Specifically: what is the optimal consumption path, and when should the agent choose to cease economic activity? The answer turns out to involve a beautiful two-equation system (an intertemporal budget constraint and an optimal stopping condition) that pins down both the intensity of consumption and the duration of life. The agent who solves this system lives significantly longer and better than the naive hand-to-mouth agent who simply spends income as it arrives. Whether this is reassuring or depressing depends on whether you identify more with the optimiser or the hand-to-mouth consumer.</p>
+    <p>We extend the model to allow for exponentially rising returns on capital&mdash;the scenario where AI makes capital increasingly productive even as it destroys labour income. This produces the model&rsquo;s most striking prediction: above a critical rate of return growth, the agent can live forever. Below it, the agent still dies, but later and more comfortably than without financial planning. The boundary between mortality and immortality is, naturally, a function of the parameters, and the reader is invited to find it using the interactive sliders on the left.</p>
+    <p>The paper proceeds as follows. Section 2 establishes the
+    model. Section 3 introduces the AI shock. Section 4 derives the
+    optimal control solution. Section 5 compares it with hand-to-mouth
+    behaviour. Section 6 discusses comparative statics. Section 7 extends to rising returns. Section 8 concludes with the appropriate mixture of rigour and existential dread.</p>
+  </section>
+
+  <section>
+    <h2>The Setup</h2>
+    <p>A consumer with infinite potential lifespan chooses consumption $c(t)$ to maximise lifetime utility:</p>
+    $$V = \int_0^T \bigl[A + \log(c(t) - d)\bigr]\, e^{-\rho t}\, dt$$
+    <p>where:</p>
+    <ul>
+      <li>$d \gt 0$ is a subsistence floor &mdash; consumption below $d$ is not viable (the agent &ldquo;dies&rdquo;),</li>
+      <li>$A \gt 0$ is a constant that captures the utility of being alive <em>per se</em> (independent of consumption intensity),</li>
+      <li>$\rho \gt 0$ is the rate of time preference,</li>
+      <li>$T$ is the (endogenous) time at which the agent can no longer sustain $c \geq d$.</li>
+    </ul>
+    <p>Wealth $a(t)$ evolves according to:</p>
+    $$\dot{a} = r\, a(t) + w(t) - c(t), \qquad a(t) \geq 0$$
+    <p>where $r$ is the interest rate and $w(t)$ is labour income. The borrowing constraint $a(t) \geq 0$ prevents the agent from being in debt.</p>
+    <p><strong>Pre-shock steady state.</strong> Before $t = 0$, the
+    economy sits in a steady state with $r = \rho$, constant wage
+    $w$. Assuming the consumer has 0 initial wealth ($a = 0$), we have
+    $c = w$. The Euler equation is trivially satisfied and the agent
+    lives forever.</p>
+  </section>
+
+  <section>
+    <h2>The Shock at $t = 0$</h2>
+    <p>At $t = 0$ an unexpected, permanent shock hits:</p>
+    <ol>
+      <li><strong>Interest rate rises:</strong> $r \gt \rho$ (return to capital jumps above the discount rate).</li>
+      <li><strong>Income declines exponentially:</strong> $w(t) = w\, e^{-\eta t}$, with $\eta \gt 0$.</li>
+    </ol>
+    This shock captures a technological breakthrough, such as AI,
+    which affects both labor and capital income. AI is a form of
+    capital, which affects its rate of return. To the extent that it
+    can perfectly substitute to human labor, it also affects labor
+    income. The assumption is that the increasing efficiency of AI
+    leads to a decreasing equilibrium wage. 
+
+    <p>The present value of lifetime income is:</p>
+    $$\text{PV}(\text{income}) = \int_0^\infty w\, e^{-\eta t}\, e^{-r t}\, dt = \frac{w}{r + \eta}$$
+    <p>The present value of subsistence forever would be:</p>
+    $$\text{PV}(\text{subsistence}) = \int_0^\infty d\, e^{-r t}\, dt = \frac{d}{r}$$
+    <p><strong>Case 1: Infinite life</strong> ($w/(r + \eta) \geq d/r$). When lifetime income suffices to fund subsistence forever, the agent faces a standard infinite-horizon consumption-savings problem with $r \gt \rho$. The optimal path is $c(t) = d + \varepsilon\, e^{(r-\rho)t}$ where $\varepsilon = \rho\bigl[\frac{w}{r+\eta} - \frac{d}{r}\bigr]$ is pinned down by the intertemporal budget constraint alone. The agent lives forever with monotonically rising consumption. This case, while analytically straightforward, is not our main interest.</p>
+    <p><strong>Case 2: Finite life</strong> ($w/(r + \eta) \lt d/r$). The more interesting case arises when:</p>
+    $$\frac{w}{r + \eta} \lt \frac{d}{r}$$
+    <p>i.e.&nbsp;lifetime income cannot fund subsistence indefinitely. The agent <em>must</em> eventually die at some finite time $T$. The question is: how should the agent optimally consume on $[0, T]$, and what determines $T$?</p>
+    <p>A natural benchmark is the <strong>hand-to-mouth</strong> (or autarky) <strong>path</strong>, denoted with subscript $A$: the agent simply consumes income as it arrives, $c_A(t) = w(t)$, with zero saving. This path is viable until income crosses subsistence at $T_A = \frac{1}{\eta}\log(w/d)$. We derive the optimal path in Section 4 and compare it systematically against Path A in Section 5.</p>
+    <figure class="plot"><div id="plot-income"></div><figcaption>Income $w(t)$ vs subsistence floor $d$. The crossing point is $T_A$.</figcaption></figure>
+    <figure class="plot"><div id="plot-pv"></div><figcaption>Present values of lifetime income and subsistence. The critical condition requires the left bar to be shorter.</figcaption></figure>
+  </section>
+
+  <section>
+    <h2>Optimal Control Solution</h2>
+    <h3>Hamiltonian and First-Order Conditions</h3>
+    <p>Define the current-value Hamiltonian:</p>
+    $$\mathcal{H} = A + \log(c - d) + \lambda\bigl(r\, a + w(t) - c\bigr)$$
+    <p>The first-order conditions are:</p>
+    <ol>
+      <li><strong>Optimality in $c$:</strong> $\dfrac{\partial \mathcal{H}}{\partial c} = 0 \implies \dfrac{1}{c - d} = \lambda$</li>
+      <li><strong>Costate equation:</strong> $\dot{\lambda} = (\rho - r)\,\lambda$</li>
+      <li><strong>State equation:</strong> $\dot{a} = r\, a + w\, e^{-\eta t} - c$</li>
+      <li><strong>Boundary conditions:</strong> $a(0) = 0$, $a(T) = 0$</li>
+    </ol>
+    <h3>Euler Equation and Consumption Path</h3>
+    <p>From the costate equation: $\lambda(t) = \lambda(0)\, e^{(\rho - r)t}$. Substituting into the optimality condition $\lambda = 1/(c - d)$:</p>
+    $$c(t) - d = \frac{1}{\lambda(0)}\, e^{(r - \rho)t}$$
+    <p>Defining $\varepsilon \equiv 1/\lambda(0) = c(0) - d \gt 0$, the optimal consumption path is:</p>
+    $$\boxed{c(t) = d + \varepsilon\, e^{(r-\rho)t}, \qquad t \in [0, T]}$$
+    <p>This is the <strong>Euler-shaped path</strong>: consumption starts at $c(0) = d + \varepsilon$ and grows at rate $r - \rho \gt 0$.</p>
+    <h3>Borrowing Constraint</h3>
+    <p>The wealth trajectory is obtained by integrating the state equation with $a(0) = 0$. Multiplying $\dot{a} - r\,a = w\,e^{-\eta t} - c(t)$ by the integrating factor $e^{-rt}$ gives $\frac{d}{dt}\bigl[a(t)\,e^{-rt}\bigr] = \bigl[w\,e^{-\eta t} - c(t)\bigr]\,e^{-rt}$. Integrating from $0$ to $t$:</p>
+    $$a(t) = \int_0^t \bigl[w\, e^{-\eta s} - c(s)\bigr]\, e^{r(t-s)}\, ds$$
+    <p>Substituting the optimal path $c(s) = d + \varepsilon\,e^{(r-\rho)s}$, the integrand becomes $\bigl[w\,e^{-\eta s} - d - \varepsilon\,e^{(r-\rho)s}\bigr]\,e^{r(t-s)}$. With $a(0) = a(T) = 0$ and interior optimality, the borrowing constraint $a(t) \geq 0$ binds only at the endpoints&mdash;wealth is strictly positive on $(0,T)$.</p>
+    <h3>The Two-Equation System</h3>
+    <p>The two unknowns $(\varepsilon, T)$ are pinned down by two conditions.</p>
+    <h4>Derivation of the Intertemporal Budget Constraint (IBC)</h4>
+    <p>The terminal condition $a(T) = 0$ requires that total present-value income equals total present-value consumption on $[0, T]$:</p>
+    $$\int_0^T \bigl[w\, e^{-\eta t} - c(t)\bigr]\, e^{-r t}\, dt = 0$$
+    <p>Substituting $c(t) = d + \varepsilon\,e^{(r-\rho)t}$ and splitting into three integrals:</p>
+    $$\int_0^T w\, e^{-(r+\eta) t}\, dt - \int_0^T d\, e^{-r t}\, dt - \int_0^T \varepsilon\, e^{(r-\rho)t}\, e^{-r t}\, dt = 0$$
+    <p>Each integral is a standard exponential. The third simplifies because $(r - \rho)t - rt = -\rho t$:</p>
+    $$\frac{w}{r+\eta}\bigl[1 - e^{-(r+\eta)T}\bigr] - \frac{d}{r}\bigl[1 - e^{-rT}\bigr] - \frac{\varepsilon}{\rho}\bigl[1 - e^{-\rho T}\bigr] = 0$$
+    <p>Rearranging:</p>
+    $$\boxed{\frac{\varepsilon}{\rho}\bigl[1 - e^{-\rho T}\bigr] = \frac{w}{r+\eta}\bigl[1 - e^{-(r+\eta)T}\bigr] - \frac{d}{r}\bigl[1 - e^{-rT}\bigr]}$$
+    <p>The left-hand side is the present value (at discount rate $\rho$) of above-subsistence consumption $\varepsilon\,e^{(r-\rho)t}$. The right-hand side is the present value (at discount rate $r$) of surplus income $w\,e^{-\eta t} - d$ over $[0, T]$. The IBC says these must be equal: the agent spends exactly what the surplus can fund.</p>
+    <h4>Derivation of the Optimal Stopping (OS) condition</h4>
+    <p>When the terminal time $T$ is free, the standard transversality condition for optimal stopping requires that the current-value Hamiltonian vanish at the boundary:</p>
+    $$\mathcal{H}(T) = 0$$
+    <p>Evaluating the Hamiltonian at $t = T$ with the terminal
+    condition $a(T) = 0$, we get:</p>
+    $$A + \log(c(T) - d) + \lambda(T)\bigl[w\, e^{-\eta T} - c(T)\bigr] = 0$$
+    <p>Now substitute the known expressions. At $t = T$: $c(T) - d = \varepsilon\,e^{(r-\rho)T}$, so $\log(c(T) - d) = \log\varepsilon + (r-\rho)T$. The costate variable is $\lambda(T) = 1/[c(T)-d] = e^{(\rho-r)T}/\varepsilon$. Substituting:</p>
+    $$A + \log\varepsilon + (r-\rho)T + \frac{e^{(\rho-r)T}}{\varepsilon}\bigl[w\,e^{-\eta T} - d - \varepsilon\,e^{(r-\rho)T}\bigr] = 0$$
+    <p>The last term expands as $\frac{w\,e^{-\eta T} - d}{\varepsilon\,e^{(r-\rho)T}} - 1$. Collecting:</p>
+    $$\boxed{A + \log\varepsilon + (r - \rho)T + \frac{w\, e^{-\eta T} - d}{\varepsilon\, e^{(r-\rho)T}} - 1 = 0}$$
+    <p>The Hamiltonian balances the <strong>marginal value of one more instant alive</strong> (the log-utility terms $A + \log\varepsilon + (r-\rho)T$) against the <strong>marginal net resource cost</strong> (the term $\frac{w\,e^{-\eta T} - d}{\varepsilon\,e^{(r-\rho)T}}$, which is negative when income has fallen below subsistence). The constant $-1$ arises from the optimality of $c$ within the Hamiltonian. The agent extends life until the value of living one more instant exactly offsets the cost of financing it.</p>
+    <p><strong>Together</strong>, the IBC and OS equations jointly determine $(\varepsilon, T)$, and hence the entire optimal path. The IBC pins down how much above-subsistence consumption the budget can afford given a horizon $T$; the OS pins down the horizon at which the marginal value of life drops to zero.</p>
+    <figure class="plot"><div id="plot-consumption"></div><figcaption>Optimal consumption $c^*(t)$, hand-to-mouth $c_A(t)$, income $w(t)$, and subsistence $d$.</figcaption></figure>
+    <figure class="plot"><div id="plot-wealth"></div><figcaption>Wealth trajectory $a(t)$ under optimal policy. The agent saves early and dissaves later.</figcaption></figure>
+    <figure class="plot"><div id="plot-welfare"></div><figcaption>Welfare $V(T)$ as a function of the planning horizon. The optimum $T^*$ maximises lifetime utility; $V_A$ (dashed) is the hand-to-mouth benchmark.</figcaption></figure>
+    <h3>The three Phases of Life</h3>
+    <p>The optimal path divides naturally into three phases, visible in Figures 3 and 4:</p>
+    <ol>
+      <li><strong>Saving phase</strong> ($0 \lt t \lt t_{\text{peak}}$): Income exceeds consumption. The agent accumulates wealth rapidly. Consumption starts modestly&mdash;just $d + \varepsilon$&mdash;because the Euler equation dictates a rising path, not because the agent is poor.</li>
+      <li><strong>Crossover</strong> ($t \approx t_{\text{peak}}$): Income has decayed enough that it equals consumption. Wealth reaches its maximum. From here, the agent begins drawing down savings.</li>
+      <li><strong>Dissaving phase</strong> ($t_{\text{peak}} \lt t \lt T$): Income has fallen below subsistence, yet the agent continues to live&mdash;funded entirely by accumulated wealth. Consumption continues to <em>rise</em> (the Euler equation never reverses), while wealth drains to zero at $t = T$.</li>
+    </ol>
+    <p>The dissaving phase is the most striking feature. The agent knowingly runs down wealth to fund a consumption path that <em>increases</em> even as income vanishes. This is not profligacy&mdash;it is optimal given the preference for rising above-subsistence consumption implied by $r \gt \rho$.</p>
+  </section>
+
+  <section>
+    <h2>Comparison to a Hand-to-Mouth consumer</h2>
+    <p>Suppose the agent simply consumes income each period: $c_A(t) = w(t) = w\, e^{-\eta t}$. This is feasible as long as $w(t) \geq d$, i.e.&nbsp;until:</p>
+    $$T_A = \frac{1}{\eta}\log\frac{w}{d}$$
+    It is instructive to see why this consumption path is
+    suboptimal. It violates the Euler equation: $\dot{c}_A/c_A =
+    -\eta$, while the Euler equation requires $\dot{c}/(c-d) = r -
+    \rho \gt 0$. Transfering consumption from early to late clearly
+    improves over the hand-to-mouth path, a standard intertemporal substitution
+    effect. In addition, saving allows to extend life beyond $T_A$,
+    which increases welfare, on income effect at the extensive margin.
+
+    <p><strong>Quantifying the welfare gain.</strong> The hand-to-mouth agent&rsquo;s lifetime welfare is $V_A = \int_0^{T_A} [A + \log(w\,e^{-\eta t} - d)]\, e^{-\rho t}\, dt$. The gap $V^* - V_A$ measures the value of financial planning&mdash;the return to intertemporal smoothing when facing a declining income trajectory. In the interactive charts above, this gap is typically large: the optimising agent lives significantly longer ($T^* \gt T_A$) <em>and</em> achieves higher consumption for most of the horizon. The hand-to-mouth agent wastes resources by over-consuming early (when income is high) and dies abruptly when income hits subsistence. The optimising agent, by contrast, restrains early consumption, builds a savings buffer, and extends life into a period that the hand-to-mouth agent never reaches.</p>
+  </section>
+
+  <section>
+    <h2>Discussion</h2>
+    <h3>The Role of $A$</h3>
+    <p>The parameter $A$ governs the <strong>longevity&ndash;intensity trade-off</strong>:</p>
+    <ul>
+      <li><strong>Large $A$:</strong> Being alive is very valuable. The agent accepts lower consumption intensity (smaller $\varepsilon$) to extend life (larger $T$). In the limit $A \to \infty$, the agent clings to life as long as financially possible, consuming near subsistence.</li>
+      <li><strong>Small $A$:</strong> Being alive has little intrinsic value. The agent prefers a shorter, more intense life (larger $\varepsilon$, smaller $T$).</li>
+    </ul>
+    <h3>Limiting Cases</h3>
+    <ol>
+      <li><strong>$\eta \to 0$ (income stays constant):</strong> If $w \gt d$, the agent can live forever. The problem reduces to standard consumption-savings with $r \gt \rho$.</li>
+      <li><strong>$r \to \rho$ (no wedge):</strong> The Euler equation gives flat above-subsistence consumption: $c(t) = d + \varepsilon$. If $w/(\eta + \rho) \geq d/\rho$, the agent lives forever at $\varepsilon = \rho\bigl[w/(\eta+\rho) - d/\rho\bigr]$. If $w/(\eta + \rho) \lt d/\rho$, the agent still dies at finite $T$ with constant consumption, and $(\varepsilon, T)$ are jointly determined by the IBC and OS conditions.</li>
+      <li><strong>$A \to \infty$ (life infinitely valued):</strong> $T$ is maximised; consumption approaches $d$ from above. $\varepsilon \to 0$.</li>
+      <li><strong>$A$ small:</strong> $T$ shrinks. In the extreme, the agent may choose a very short horizon with high consumption.</li>
+    </ol>
+    <h3>Comparative Statics</h3>
+    <p>The interactive sliders reveal several robust patterns:</p>
+    <ul>
+      <li><strong>Faster income decay ($\eta \uparrow$):</strong> Both $T^*$ and $T_A$ fall, but $T_A$ falls faster. The welfare gap $V^* - V_A$ <em>widens</em>&mdash;financial planning becomes more valuable precisely when the shock is more severe.</li>
+      <li><strong>Higher interest rate ($r \uparrow$):</strong> Two competing effects. The Euler equation tilts consumption toward the future (steeper path), but higher $r$ also increases the return on savings, allowing longer life. Net effect: $T^*$ typically rises and $\varepsilon$ falls.</li>
+      <li><strong>Higher subsistence ($d \uparrow$):</strong> Shrinks the surplus available for above-subsistence consumption. Both $T^*$ and $\varepsilon$ fall. When $d$ approaches $w$, the agent barely lives at all&mdash;there is almost no surplus to allocate.</li>
+    </ul>
+    <p>These comparative statics have a unifying theme: the model captures a <strong>race between wealth accumulation and income erosion</strong>. Any parameter change that tilts this race toward erosion shortens life; any change that favours accumulation extends it.</p>
+  </section>
+
+  <section>
+    <h2>Extension: Exponentially Rising Return on Capital</h2>
+    <p>The baseline model assumes a constant interest rate $r$. But a key feature of AI-driven economic transformation is that the <strong>return on capital may itself accelerate</strong> as AI capabilities compound. We now extend the model by allowing:</p>
+    $$r(t) = r_0\, e^{\gamma t}, \qquad \gamma \geq 0$$
+    <p>where $\gamma$ is the growth rate of capital returns. When $\gamma = 0$ we recover the baseline. When $\gamma \gt 0$, the return on capital grows exponentially&mdash;modelling a world where AI-augmented capital becomes increasingly productive.</p>
+
+    <p>Both the decline in wages ($\eta$) and the rise in returns ($\gamma$) stem from the same underlying technological progress. If production is Cobb-Douglas in capital and labour with capital share $\alpha$, and AI is perfectly substitutable for human labour, then a common rate of AI improvement drives wages down at rate $\eta$ and capital returns up at rate $\gamma$. The ratio $\gamma/\eta$ is thus tightly linked by the production structure and has an order of magnitude of 1. A typical value is $\gamma/\eta \approx 2$ (corresponding to $\alpha \approx 1/3$). The interactive slider on the left parameterises $\gamma/\eta$ directly.</p>
+    <h3>Modified Optimal Control</h3>
+    <p>The cumulative return function is:</p>
+    $$R(t) = \int_0^t r(s)\, ds = \frac{r_0}{\gamma}\bigl(e^{\gamma t} - 1\bigr)$$
+    <p>The costate equation $\dot{\lambda} = (\rho - r(t))\lambda$ now has the solution $\lambda(t) = \lambda(0)\, e^{\rho t - R(t)}$, giving the modified consumption path:</p>
+    $$\boxed{c(t) = d + \varepsilon\, e^{R(t) - \rho t}}$$
+    <p>This is <strong>super-exponential growth</strong> in above-subsistence consumption. As $r(t)$ accelerates, the optimal consumption path curves upward ever more steeply&mdash;the agent rationally front-loads saving because every unit saved earns an accelerating return.</p>
+    <h3>Modified Budget Constraint</h3>
+    <p>The present-value discount factor is now $Q(t) \equiv e^{-R(t)}$ rather than $e^{-rt}$. The IBC becomes:</p>
+    $$\int_0^T \bigl[w\, e^{-\eta t} - d - \varepsilon\, e^{R(t) - \rho t}\bigr]\, e^{-R(t)}\, dt = 0$$
+    <p>Since $R(t)$ grows super-linearly, the discount factor $e^{-R(t)}$ decays much faster than in the constant-$r$ case. This means distant cash flows are heavily discounted, making the far future almost irrelevant for budget purposes.</p>
+    <h3>Superexponential growth favours immortality</h3>
+    <p>Recall the critical condition for finite life: the present value of income must fall short of the present value of subsistence. With rising returns, both present values shrink (superexponential discounting kills distant cash flows), but <strong>subsistence shrinks more</strong>. The reason is that subsistence $d$ is constant and stretches to infinity, so its present value depends heavily on the distant future&mdash;precisely the region that superexponential discounting annihilates. Income $w\,e^{-\eta t}$, by contrast, is already concentrated in the near term, so its present value is less affected.</p>
+    <p>Formally, define the present-value the present-value operator
+    $\mathrm{PV}[f(t)]\equiv\int_0^{\infty} Q(t)f(t)\,dt$. Life is
+    infinite when the following critical ratio $\Phi$ exceeds 1.</p>
+    $$\Phi \equiv \frac{\mathrm{PV}[w(t)]}{\mathrm{PV}[d]} = \frac{w}{d}\cdot\frac{\mathrm{PV}[e^{-\eta t}]}{\mathrm{PV}[1]}$$
+    <p>As $\gamma$ increases, the weighting function $Q(t)$ becomes increasingly concentrated near $t = 0$, where $e^{-\eta t} \approx 1$. In the limit $\gamma \to \infty$, the ratio of integrals tends to 1 and $\Phi \to w/d \gt 1$. Therefore, <strong>for sufficiently large $\gamma/\eta$, the agent can live forever</strong>. Superexponential growth in returns makes immortality achievable even when the constant-$r$ model predicts finite death.</p>
+    
+<h3>Closed-form present values and the immortality frontier</h3>
+
+<p>
+For the exponential specifications used throughout the paper, these present values can be computed in closed form.
+</p>
+
+<p>
+With $r(t)=r_0 e^{\gamma t}$ we have
+</p>
+
+$$R(t)=\int_0^t r(s)\,ds = \frac{r_0}{\gamma}\bigl(e^{\gamma t}-1\bigr),\qquad Q(t)=\exp\!\left[-\frac{r_0}{\gamma}\bigl(e^{\gamma t}-1\bigr)\right].$$
+
+<p>
+Defining the following dimensionless parameters
+</p>
+
+$$\alpha\equiv \frac{\gamma}{\eta},\qquad \beta\equiv \frac{r_0}{\gamma},$$
+
+<p>
+one obtains
+</p>
+
+$$\mathrm{PV}[1]=\int_0^{\infty}Q(t)\,dt=\frac{e^{\beta}}{\gamma}\,E_1(\beta),$$
+
+$$\mathrm{PV}[w e^{-\eta t}]=\frac{w e^{\beta}}{\gamma}\,\beta^{\alpha^{-1}}\,\Gamma(-\alpha^{-1},\beta),$$
+
+<p>
+where $E_1$ is the exponential integral $E_1(x)=\int_x^{\infty} e^{-u}\,u^{-1}\,du$ and $\Gamma(s,x)$ is the upper incomplete gamma function. Consequently the present-value ratio simplifies to
+</p>
+
+$$\Phi(\gamma)=\frac{w}{d}\cdot\frac{\mathrm{PV}[e^{-\eta t}]}{\mathrm{PV}[1]} = \frac{w}{d}\cdot\frac{\beta^{\alpha^{-1}}\,\Gamma(-\alpha^{-1},\beta)}{E_1(\beta)}.$$
+
+<p>
+The boundary between finite and infinite life, the immortality frontier, is therefore given by:
+</p>
+
+$$\boxed{\;T^*=\infty\ \Longleftrightarrow\ \frac{w}{d}\ge k_{\min}(\beta;\alpha)\equiv\frac{E_1(\beta)}{\beta^{\alpha^{-1}}\,\Gamma(-\alpha^{-1},\beta)}.\;}$$
+
+
+<p>
+Remark that in the benchmark case $\gamma=2\eta$ (the slider’s default
+order of magnitude), the formula for the frontier further simplifies
+to $k_{\min}(\beta;\tfrac12)=\frac{E_1(\beta)}{2e^{-\beta}-2\sqrt{\pi\beta}\,\operatorname{erfc}(\sqrt{\beta})}.$
+</p>
+
+    <p>
+    Figure 6 plots the immortality frontier in the $(\beta, w/d)$
+    plane.
+    </p>
+
+  <figure class="plot"><div id="plot-phi-plane"></div><figcaption>Immortality frontier in the $(\beta, w/d)$ plane. Green: $\Phi>1$ (infinite life feasible). Orange: $\Phi<1$ (finite life). The frontier $\Phi=1$ depends on $\alpha=\gamma/\eta$ and updates when moving the $\gamma/\eta$ slider.</figcaption></figure>
+
+    <p>
+When $\Phi>1$, the Euler-shaped policy $c(t)=d+\varepsilon e^{R(t)-\rho t}$ is feasible forever and the initial surplus $\varepsilon=c(0)-d$ is pinned down by the PV budget constraint:
+</p>
+$$\varepsilon = \rho\Big(\mathrm{PV}[w e^{-\eta t}] - d\,\mathrm{PV}[1]\Big).$$
+
+
+<p>
+When $\Phi<1$ and subsistence feasibility fails, the same algebra that simplifies the intertemporal budget constraint in the constant-$r$ model continues to work here, thanks to the identity $Q(t)e^{R(t)-\rho t}=e^{-\rho t}$. For any candidate horizon $T$, the IBC pins down the initial surplus as
+</p>
+
+$$\boxed{\;\varepsilon(T)=\frac{\rho}{1-e^{-\rho T}}\int_0^T Q(t)\,\bigl(w e^{-\eta t}-d\bigr)\,dt,\qquad c(t)=d+\varepsilon(T)\,e^{R(t)-\rho t}.\;}$$
+
+<p>
+The constant $A$ then selects the optimal point along this feasibility curve through the free-terminal-time condition $\mathcal{H}(T)=0$, exactly as in the baseline model.
+</p>
+
+<h3>The price of immortality: large initial saving</h3>
+    <p>When $\Phi(\gamma)$ barely exceeds 1 (near the boundary between finite and infinite life), the initial above-subsistence consumption $\varepsilon$ is very small: $\varepsilon = \rho\bigl[\text{PV(income)} - \text{PV(subsistence)}\bigr] \approx 0$. The agent must live near subsistence for an extended initial period, saving aggressively to build the capital stock that will eventually generate sufficient returns. In the limit, the agent who can just barely live forever looks almost indistinguishable from one who is about to die&mdash;both consume near $d$&mdash;but the immortal agent&rsquo;s wealth is growing while the mortal agent&rsquo;s is shrinking. The difference is invisible in consumption but dramatic in wealth trajectories.</p>
+    <h3>Key Predictions</h3>
+    <ul>
+      <li><strong>Immortality becomes more likely with rising returns:</strong> As $\gamma/\eta$ increases, the present-value ratio $\Phi$ rises, making it more likely that the agent can sustain life forever. The threshold depends on all parameters, and the reader is invited to find it using the sliders.</li>
+      <li><strong>Wealth accumulation is more aggressive:</strong> With accelerating returns, the saving phase intensifies. The agent consumes near subsistence early on to maximise the capital stock exposed to rising returns.</li>
+      <li><strong>Consumption explodes late:</strong> The super-exponential path means consumption in the final period can be orders of magnitude above subsistence&mdash;a &ldquo;live fast at the end&rdquo; pattern.</li>
+      <li><strong>Immortality requires sacrifice:</strong> The agent who achieves infinite life does so by enduring near-subsistence consumption initially&mdash;a period that may be long and austere. The promise of eventual abundance comes at the cost of present deprivation.</li>
+      <li><strong>Welfare gains from optimisation are amplified:</strong> The hand-to-mouth agent cannot exploit rising returns at all (zero savings), so the welfare gap $V^* - V_A$ grows dramatically with $\gamma/\eta$.</li>
+    </ul>
+    <figure class="plot"><div id="plot-risingr-consumption"></div><figcaption>Consumption paths under rising returns $r(t) = r_0 e^{\gamma t}$, compared with the constant-$r$ baseline.</figcaption></figure>
+    <figure class="plot"><div id="plot-risingr-wealth"></div><figcaption>Wealth trajectory under rising returns. Note the more aggressive accumulation phase.</figcaption></figure>
+    <p><strong>Discussion.</strong> The rising-returns extension captures the economic logic of AI capital accumulation. As AI systems improve, the marginal product of capital (which embeds AI) rises. A forward-looking agent exploits this by saving heavily early&mdash;tolerating near-subsistence consumption today for the promise of amplified returns tomorrow. The irony is that the agent who will eventually enjoy the highest consumption is the one who starts with the lowest. This is the opposite of the hand-to-mouth agent&rsquo;s trajectory, which starts high and collapses. The deeper irony is that the same technological force that threatens the agent&rsquo;s livelihood may also, if strong enough, offer a path to economic immortality&mdash;but only to those who save aggressively enough to seize it.</p>
+  </section>
+
+  <section>
+    <h2>Conclusion</h2>
+    <p>This paper studies a question of considerable practical urgency
+    and zero practical comfort: how should a rational agent with low
+    financial wealth allocate consumption when labour income is being methodically destroyed by technological progress, and when does the agent optimally choose to &ldquo;die&rdquo;&mdash;that is, cease economic activity? The answer, it turns out, is both mathematically elegant and existentially grim.</p>
+    <p>The main results are:</p>
+    <ol>
+      <li><strong>Optimal consumption rises even as income falls.</strong> The Euler equation dictates that above-subsistence consumption grows at rate $r - \rho$, regardless of the income trajectory. The agent achieves this by aggressively saving early and dissaving late. One might call this &ldquo;enjoying the sunset&rdquo;&mdash;the optimal strategy is to consume more generously as the end approaches, not less.</li>
+      <li><strong>Financial planning dramatically extends life.</strong> The optimising agent outlives the hand-to-mouth agent by a wide margin ($T^* \gg T_A$). The hand-to-mouth agent, who spends income as it arrives, is the economic equivalent of a grasshopper in the fable. The optimiser is the ant&mdash;except this ant also dies, just later and more comfortably.</li>
+      <li><strong>The value of being alive matters.</strong> The parameter $A$ governs a fundamental trade-off between longevity and consumption intensity. When $A$ is large, the agent clings to life near subsistence&mdash;the economic equivalent of eating ramen in a studio apartment for decades. When $A$ is small, the agent chooses a brief but intense existence&mdash;first class all the way, then oblivion.</li>
+      <li><strong>Rising capital returns amplify everything.</strong> When the return on capital accelerates (as in an AI-driven economy), the optimal strategy becomes almost paradoxical: save even more aggressively today, tolerate near-subsistence living, all for the promise of spectacular consumption later. The optimal agent in an AI boom looks <em>poorer</em> than the hand-to-mouth agent for most of the horizon&mdash;right up until the moment the exponential returns kick in and consumption explodes upward. It is the ultimate delayed gratification, except that &ldquo;later&rdquo; still ends in death.</li>
+    </ol>
+    <p>The model offers an analogy&mdash;perhaps too apt&mdash;for how economic agents might navigate an AI-induced transition. The &ldquo;death&rdquo; in the model need not be literal: it can represent the point at which a firm becomes unviable, a worker permanently exits the labour force, or an entire industry is automated out of relevance. In each case, the central message is the same: <strong>the optimal response to declining income is not to consume it as it arrives, but to save aggressively, exploit capital returns, and extend the horizon as far as the budget allows</strong>.</p>
+    <p>Of course, this assumes the agent is rational, forward-looking,
+    and has access to capital markets&mdash;assumptions that describe
+    approximately no one currently being displaced by AI. Whether the
+    real economy permits this kind of optimisation, or whether entry
+    barrier into capital markets, behavioural biases, and the understandable human preference for eating today push agents toward the hand-to-mouth path, is a question this model frames but cheerfully declines to answer.</p>
+    <p>The reader is invited to drag the sliders above and contemplate the following: in a world where $\eta$ is large (income collapsing fast), $r$ is high (capital doing great), and $A$ is subjective (how much do you enjoy being alive?), the model computes your optimal death date to two decimal places. Whether this is a feature or a bug of economic theory is left as an exercise.</p>
+    <hr style="margin-top:2rem">
+    <p style="font-size:0.85rem; color:#888; text-align:center;"><em>This paper was written with the assistance of AI&mdash;providing empirical support for the very shock we model.</em></p>
+  </section>
+
+  <section style="counter-increment: none;">
+    <h2 style="counter-increment: none;" id="references">References</h2>
+    <ol style="font-size:0.93rem; line-height:1.6;">
+      <li id="ref-ramsey">Ramsey, F.&nbsp;P. (1928). &ldquo;A Mathematical Theory of Saving.&rdquo; <em>The Economic Journal</em>, 38(152), 543&ndash;559.</li>
+      <li id="ref-yaari">Yaari, M.&nbsp;E. (1965). &ldquo;Uncertain Lifetime, Life Insurance, and the Theory of the Consumer.&rdquo; <em>Review of Economic Studies</em>, 32(2), 137&ndash;150.</li>
+      <li id="ref-acemoglu-restrepo">Acemoglu, D. &amp; Restrepo, P. (2018). &ldquo;The Race between Man and Machine: Implications of Technology for Growth, Factor Shares, and Employment.&rdquo; <em>American Economic Review</em>, 108(6), 1488&ndash;1542.</li>
+      <li id="ref-aghion">Aghion, P., Jones, B.&nbsp;F. &amp; Jones, C.&nbsp;I. (2018). &ldquo;Artificial Intelligence and Economic Growth.&rdquo; <em>The Economics of Artificial Intelligence</em>, University of Chicago Press, 237&ndash;282.</li>
+      <li id="ref-korinek">Korinek, A. &amp; Stiglitz, J.&nbsp;E. (2019). &ldquo;Artificial Intelligence and Its Implications for Income Distribution and Unemployment.&rdquo; <em>The Economics of Artificial Intelligence</em>, University of Chicago Press, 349&ndash;390.</li>
+      <li id="ref-nordhaus">Nordhaus, W.&nbsp;D. (2021). &ldquo;Are We Approaching an Economic Singularity? Information Technology and the Future of Economic Growth.&rdquo; <em>American Economic Journal: Macroeconomics</em>, 13(1), 299&ndash;332.</li>
+      <li id="ref-brynjolfsson">Brynjolfsson, E. &amp; McAfee, A. (2014). <em>The Second Machine Age: Work, Progress, and Prosperity in a Time of Brilliant Technologies.</em> W.&nbsp;W.&nbsp;Norton.</li>
+    </ol>
+  </section>
+</article>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// ===== BRENT'S METHOD =====
+function brent(f, xa, xb, tol, maxIter) {
+  tol = tol || 1e-10; maxIter = maxIter || 200;
+  var a = xa, b = xb, fa = f(a), fb = f(b);
+  if (isNaN(fa) || isNaN(fb)) return null;
+  if (fa * fb > 0) return null;
+  var c = a, fc = fa, d = b - a, e = d;
+  for (var i = 0; i < maxIter; i++) {
+    if (fb * fc > 0) { c = a; fc = fa; d = e = b - a; }
+    if (Math.abs(fc) < Math.abs(fb)) {
+      a = b; b = c; c = a; fa = fb; fb = fc; fc = fa;
+    }
+    var tol1 = 2e-15 * Math.abs(b) + 0.5 * tol;
+    var xm = 0.5 * (c - b);
+    if (Math.abs(xm) <= tol1 || fb === 0) return b;
+    if (Math.abs(e) >= tol1 && Math.abs(fa) > Math.abs(fb)) {
+      var s = fb / fa, p, q;
+      if (a === c) { p = 2 * xm * s; q = 1 - s; }
+      else {
+        q = fa / fc; var r2 = fb / fc;
+        p = s * (2 * xm * q * (q - r2) - (b - a) * (r2 - 1));
+        q = (q - 1) * (r2 - 1) * (s - 1);
+      }
+      if (p > 0) q = -q; else p = -p;
+      if (2 * p < Math.min(3 * xm * q - Math.abs(tol1 * q), Math.abs(e * q))) {
+        e = d; d = p / q;
+      } else { d = xm; e = d; }
+    } else { d = xm; e = d; }
+    a = b; fa = fb;
+    b += (Math.abs(d) > tol1) ? d : (xm > 0 ? tol1 : -tol1);
+    fb = f(b);
+  }
+  return b;
+}
+
+// ===== WEALTH (RK4) =====
+function computeWealth(ts, r, w, eta, d, eps, rho) {
+  var res = [{t: ts[0], a: 0}]; var a = 0;
+  for (var i = 1; i < ts.length; i++) {
+    var dt = ts[i] - ts[i-1];
+    var ff = function(t, a) { return r*a + w*Math.exp(-eta*t) - (d + eps*Math.exp((r-rho)*t)); };
+    var k1 = ff(ts[i-1], a);
+    var k2 = ff(ts[i-1]+dt/2, a+dt*k1/2);
+    var k3 = ff(ts[i-1]+dt/2, a+dt*k2/2);
+    var k4 = ff(ts[i], a+dt*k3);
+    a += dt*(k1+2*k2+2*k3+k4)/6;
+    res.push({t: ts[i], a: a});
+  }
+  return res;
+}
+
+// ===== WELFARE =====
+function computeWelfare(eps, T, A, r, rho) {
+  if (eps <= 0 || T <= 0) return -Infinity;
+  var e1 = Math.exp(-rho*T), om = 1 - e1;
+  return (A + Math.log(eps))/rho * om + (r-rho)/rho * (om/rho - T*e1);
+}
+function computeWelfareA(w, d, eta, A, rho, TA) {
+  if (TA <= 0 || w <= d) return -Infinity;
+  var n = 2000, dt = (TA * 0.9999) / n, sum = 0;
+  for (var i = 0; i <= n; i++) {
+    var t = i * dt, c = w * Math.exp(-eta * t);
+    if (c - d <= 1e-15) break;
+    var val = (A + Math.log(c - d)) * Math.exp(-rho * t);
+    var wt = (i === 0 || i === n) ? 1 : (i % 2 === 0 ? 2 : 4);
+    sum += wt * val;
+  }
+  return sum * dt / 3;
+}
+
+// ===== SOLVE SYSTEM =====
+function solveSystem(P) {
+  var r = P.r, rho = P.rho, eta = P.eta, w = P.w, d = P.d, A = P.A;
+  var TA = (w > d) ? Math.log(w/d) / eta : 0;
+  var pvI = w / (r + eta), pvS = d / r;
+  // Compute income path and T_A for all cases
+  var Tplot0 = (TA > 0 ? TA : 20) * 1.5;
+  var N0 = 400, tsA = []; for (var i=0;i<=N0;i++) tsA.push(i*Tplot0/N0);
+  var incomeAll = tsA.map(function(t){return {t:t, w: w*Math.exp(-eta*t)};});
+  var consA = tsA.filter(function(t){return t<=TA+0.01;}).map(function(t){return {t:t, c: w*Math.exp(-eta*t)};});
+  var VAall = computeWelfareA(w, d, eta, A, rho, TA);
+  if (pvI >= pvS) {
+    return {ok:false, reason:'Income sustains forever (no finite death)', TA:TA, pvI:pvI, pvS:pvS,
+      income:incomeAll, consumptionA:consA, VA:VAall, Tplot:Tplot0};
+  }
+  function surplusPV(T) {
+    return w/(r+eta)*(1-Math.exp(-(r+eta)*T)) - d/r*(1-Math.exp(-r*T));
+  }
+  function epsilon(T) {
+    var s = surplusPV(T);
+    if (s <= 0) return NaN;
+    var denom = 1 - Math.exp(-rho*T);
+    if (Math.abs(denom) < 1e-15) return NaN;
+    return rho * s / denom;
+  }
+  // Find T_max where surplus PV = 0
+  var Tmax = brent(surplusPV, 0.1, 500);
+  if (Tmax === null || Tmax <= 0.1) Tmax = 200;
+  // OS equation
+  function os(T) {
+    var eps = epsilon(T);
+    if (isNaN(eps) || eps <= 0) return NaN;
+    var growth = (r - rho) * T;
+    var netInc = w * Math.exp(-eta * T) - d;
+    return A + Math.log(eps) + growth + netInc / (eps * Math.exp(growth)) - 1;
+  }
+  // Bracket search for T*
+  var Tstar = null, lo = 0.05, hi = Tmax - 0.05;
+  if (hi <= lo) hi = lo + 1;
+  // Try direct brent
+  Tstar = brent(os, lo, hi);
+  // If that fails, scan for bracket
+  if (Tstar === null) {
+    var nScan = 200;
+    for (var i = 0; i < nScan; i++) {
+      var t1 = lo + (hi-lo)*i/nScan, t2 = lo + (hi-lo)*(i+1)/nScan;
+      var f1 = os(t1), f2 = os(t2);
+      if (!isNaN(f1) && !isNaN(f2) && f1*f2 < 0) { Tstar = brent(os, t1, t2); break; }
+    }
+  }
+  if (Tstar === null || isNaN(Tstar)) {
+    return {ok:false, reason:'Solver did not converge', TA:TA, pvI:pvI, pvS:pvS};
+  }
+  var epsStar = epsilon(Tstar);
+  if (isNaN(epsStar) || epsStar <= 0) {
+    return {ok:false, reason:'Invalid epsilon', TA:TA, pvI:pvI, pvS:pvS};
+  }
+  // Paths
+  var Tplot = Math.max(Tstar, TA) * 1.08;
+  var N = 400;
+  var tsOpt = []; for (var i=0;i<=N;i++) tsOpt.push(i*Tstar/N);
+  var tsAll = []; for (var i=0;i<=N;i++) tsAll.push(i*Tplot/N);
+  var consumption = tsOpt.map(function(t){return {t:t, c: d + epsStar*Math.exp((r-rho)*t)};});
+  var consumptionA = tsAll.filter(function(t){return t<=TA+0.01;}).map(function(t){return {t:t, c: w*Math.exp(-eta*t)};});
+  var income = tsAll.map(function(t){return {t:t, w: w*Math.exp(-eta*t)};});
+  var wealth = computeWealth(tsOpt, r, w, eta, d, epsStar, rho);
+  var Vstar = computeWelfare(epsStar, Tstar, A, r, rho);
+  var VA = computeWelfareA(w, d, eta, A, rho, TA);
+  // Welfare curve V(T)
+  var nW = 200, welfCurve = [];
+  for (var i = 1; i <= nW; i++) {
+    var T = 0.1 + (Tmax - 0.3) * i / nW;
+    var ep = epsilon(T);
+    if (!isNaN(ep) && ep > 0) welfCurve.push({T:T, V: computeWelfare(ep, T, A, r, rho)});
+  }
+  return {ok:true, epsilon:epsStar, T:Tstar, TA:TA, Vstar:Vstar, VA:VA,
+    pvI:pvI, pvS:pvS, consumption:consumption, consumptionA:consumptionA,
+    income:income, wealth:wealth, welfareCurve:welfCurve, Tmax:Tmax, Tplot:Tplot};
+}
+// ===== COLORS =====
+var C = {inc:'#2171b5', sub:'#cb181d', opt:'#238b45', htm:'#74c476', wth:'#6a51a3', wlf:'#006d2c'};
+var M = {top:25, right:25, bottom:40, left:55};
+
+function mkSVG(id, w, h) {
+  w=w||600; h=h||340;
+  var el = document.getElementById(id); if(!el) return null;
+  el.innerHTML = '';
+  var svg = d3.select(el).append('svg')
+    .attr('viewBox','0 0 '+w+' '+h).attr('preserveAspectRatio','xMidYMid meet');
+  var g = svg.append('g').attr('transform','translate('+M.left+','+M.top+')');
+  return {svg:svg, g:g, W:w-M.left-M.right, H:h-M.top-M.bottom};
+}
+function addAxes(p, x, y, xl, yl) {
+  p.g.append('g').attr('transform','translate(0,'+p.H+')').call(d3.axisBottom(x).ticks(8))
+    .append('text').attr('x',p.W/2).attr('y',35).attr('fill','#333').attr('text-anchor','middle').attr('font-size','12px').text(xl);
+  p.g.append('g').call(d3.axisLeft(y).ticks(6))
+    .append('text').attr('transform','rotate(-90)').attr('x',-p.H/2).attr('y',-40)
+    .attr('fill','#333').attr('text-anchor','middle').attr('font-size','12px').text(yl);
+  var grid = p.g.append('g').attr('class','grid').call(d3.axisLeft(y).ticks(6).tickSize(-p.W).tickFormat(''));
+  grid.select('.domain').remove(); // remove the extra axis line
+  grid.selectAll('line').attr('stroke','#e8e8e8');
+}
+function vline(g, x, y, label, color, dash) {
+  g.append('line').attr('x1',x).attr('x2',x).attr('y1',y.range()[0]).attr('y2',y.range()[1])
+    .attr('stroke',color||'#999').attr('stroke-dasharray',dash||'4,3').attr('stroke-width',1);
+  if(label) g.append('text').attr('x',x+3).attr('y',y.range()[1]+12)
+    .attr('fill',color||'#666').attr('font-size','11px').text(label);
+}
+function vlineBottom(g, x, y, label, color, dash, dy) {
+  dy = (dy===undefined||dy===null) ? 6 : dy;
+  g.append('line').attr('x1',x).attr('x2',x).attr('y1',y.range()[0]).attr('y2',y.range()[1])
+    .attr('stroke',color||'#999').attr('stroke-dasharray',dash||'4,3').attr('stroke-width',1);
+  if(label) g.append('text').attr('x',x+3).attr('y',y.range()[0]-dy)
+    .attr('fill',color||'#666').attr('font-size','11px').text(label);
+}
+
+
+// ===== PLOT 1: INCOME vs SUBSISTENCE =====
+function plotIncome(P, S) {
+  var p = mkSVG('plot-income'); if(!p) return;
+  var data = S.income || [];
+  var xMax = S.Tplot || 20;
+  var yMax = Math.max(P.w * 1.1, P.d * 1.5);
+  var x = d3.scaleLinear().domain([0, xMax]).range([0, p.W]);
+  var y = d3.scaleLinear().domain([0, yMax]).range([p.H, 0]);
+  addAxes(p, x, y, 'Time t', 'Income / Subsistence');
+  // subsistence line
+  p.g.append('line').attr('x1',0).attr('x2',p.W).attr('y1',y(P.d)).attr('y2',y(P.d))
+    .attr('stroke',C.sub).attr('stroke-width',2).attr('stroke-dasharray','6,3');
+  p.g.append('text').attr('x',p.W-2).attr('y',y(P.d)-5).attr('text-anchor','end')
+    .attr('fill',C.sub).attr('font-size','11px').text('d = '+P.d.toFixed(1));
+  if(data.length < 2) return;
+  // income curve
+  var line = d3.line().x(function(d){return x(d.t);}).y(function(d){return y(d.w);});
+  p.g.append('path').datum(data).attr('d',line).attr('stroke',C.inc).attr('fill','none').attr('stroke-width',2);
+  p.g.append('text').attr('x',x(0.5)).attr('y',y(data[1].w)-8)
+    .attr('fill',C.inc).attr('font-size','11px').text('w(t)');
+  // T_A annotation
+  if(S.TA > 0 && S.TA < xMax) vline(p.g, x(S.TA), y, 'T_A='+S.TA.toFixed(1), C.htm, '2,3');
+}
+
+// ===== PLOT 2: PV COMPARISON =====
+function plotPV(P, S) {
+  var p = mkSVG('plot-pv', 600, 280); if(!p) return;
+  var pvI = S.pvI, pvS = S.pvS;
+  var yMax = Math.max(pvI, pvS) * 1.3;
+  var x = d3.scaleBand().domain(['PV(income)','PV(subsistence)']).range([0,p.W]).padding(0.4);
+  var y = d3.scaleLinear().domain([0, yMax]).range([p.H, 0]);
+  p.g.append('g').attr('transform','translate(0,'+p.H+')').call(d3.axisBottom(x));
+  p.g.append('g').call(d3.axisLeft(y).ticks(5));
+  p.g.append('rect').attr('x',x('PV(income)')).attr('y',y(pvI))
+    .attr('width',x.bandwidth()).attr('height',p.H-y(pvI)).attr('fill',C.inc).attr('opacity',0.7);
+  p.g.append('rect').attr('x',x('PV(subsistence)')).attr('y',y(pvS))
+    .attr('width',x.bandwidth()).attr('height',p.H-y(pvS)).attr('fill',C.sub).attr('opacity',0.7);
+  p.g.append('text').attr('x',x('PV(income)')+x.bandwidth()/2).attr('y',y(pvI)-5)
+    .attr('text-anchor','middle').attr('font-size','11px').text(pvI.toFixed(2));
+  p.g.append('text').attr('x',x('PV(subsistence)')+x.bandwidth()/2).attr('y',y(pvS)-5)
+    .attr('text-anchor','middle').attr('font-size','11px').text(pvS.toFixed(2));
+  var crit = pvI < pvS;
+  p.g.append('text').attr('x',p.W/2).attr('y',-5).attr('text-anchor','middle')
+    .attr('font-size','12px').attr('fill', crit?'#238b45':'#cb181d')
+    .text(crit ? 'Critical condition satisfied: finite death' : 'Critical condition violated: agent lives forever');
+}
+
+// ===== PLOT 3: CONSUMPTION PATHS =====
+function plotConsumption(P, S) {
+  var p = mkSVG('plot-consumption'); if(!p||!S.ok) return;
+  var xMax = S.Tplot;
+  var allC = S.consumption.map(function(d){return d.c;}).concat(S.consumptionA.map(function(d){return d.c;}));
+  var yMax = Math.max(d3.max(allC)*1.1, P.d*2);
+  var x = d3.scaleLinear().domain([0,xMax]).range([0,p.W]);
+  var y = d3.scaleLinear().domain([0,yMax]).range([p.H,0]);
+  addAxes(p,x,y,'Time t','Consumption');
+  var ln = d3.line().x(function(d){return x(d.t);});
+  // subsistence
+  p.g.append('line').attr('x1',0).attr('x2',p.W).attr('y1',y(P.d)).attr('y2',y(P.d))
+    .attr('stroke',C.sub).attr('stroke-width',1.5).attr('stroke-dasharray','6,3');
+  // income
+  p.g.append('path').datum(S.income).attr('d',ln.y(function(d){return y(d.w);}))
+    .attr('stroke',C.inc).attr('fill','none').attr('stroke-width',1.5).attr('opacity',0.5);
+  // hand-to-mouth
+  p.g.append('path').datum(S.consumptionA).attr('d',ln.y(function(d){return y(d.c);}))
+    .attr('stroke',C.htm).attr('fill','none').attr('stroke-width',2).attr('stroke-dasharray','2,3');
+  // optimal
+  p.g.append('path').datum(S.consumption).attr('d',ln.y(function(d){return y(d.c);}))
+    .attr('stroke',C.opt).attr('fill','none').attr('stroke-width',2.5);
+  // T* and T_A lines
+  vline(p.g, x(S.T), y, 'T*='+S.T.toFixed(1), C.opt);
+  if(S.TA>0&&S.TA<xMax) vline(p.g, x(S.TA), y, 'T_A='+S.TA.toFixed(1), C.htm, '2,3');
+  // legend
+  var lg = p.g.append('g').attr('transform','translate('+(p.W-140)+',5)');
+  [{c:C.opt,t:'c*(t) optimal',dash:''},{c:C.htm,t:'c_A(t) hand-to-mouth',dash:'2,3'},
+   {c:C.inc,t:'w(t) income',dash:''},{c:C.sub,t:'d subsistence',dash:'6,3'}].forEach(function(d,i){
+    lg.append('line').attr('x1',0).attr('x2',20).attr('y1',i*16).attr('y2',i*16)
+      .attr('stroke',d.c).attr('stroke-width',2).attr('stroke-dasharray',d.dash||'none').attr('opacity',d.c===C.inc?0.5:1);
+    lg.append('text').attr('x',24).attr('y',i*16+4).attr('font-size','10px').attr('fill','#333').text(d.t);
+  });
+}
+
+// ===== PLOT 4: WEALTH =====
+function plotWealth(P, S) {
+  var p = mkSVG('plot-wealth'); if(!p||!S.ok) return;
+  var x = d3.scaleLinear().domain([0,S.T]).range([0,p.W]);
+  var yMax = d3.max(S.wealth,function(d){return d.a;})*1.2 || 1;
+  var y = d3.scaleLinear().domain([0,yMax]).range([p.H,0]);
+  addAxes(p,x,y,'Time t','Wealth a(t)');
+  // area
+  var area = d3.area().x(function(d){return x(d.t);}).y0(p.H).y1(function(d){return y(Math.max(0,d.a));});
+  p.g.append('path').datum(S.wealth).attr('d',area).attr('fill',C.wth).attr('opacity',0.15);
+  // line
+  var ln = d3.line().x(function(d){return x(d.t);}).y(function(d){return y(d.a);});
+  p.g.append('path').datum(S.wealth).attr('d',ln).attr('stroke',C.wth).attr('fill','none').attr('stroke-width',2);
+  // Find peak
+  var peak = S.wealth.reduce(function(a,b){return b.a>a.a?b:a;});
+  p.g.append('circle').attr('cx',x(peak.t)).attr('cy',y(peak.a)).attr('r',4).attr('fill',C.wth);
+  p.g.append('text').attr('x',x(peak.t)+6).attr('y',y(peak.a)-6)
+    .attr('font-size','11px').attr('fill',C.wth).text('peak: '+peak.a.toFixed(2));
+  // saving/dissaving label
+  p.g.append('text').attr('x',x(peak.t/2)).attr('y',y(yMax*0.1))
+    .attr('text-anchor','middle').attr('font-size','10px').attr('fill','#666').text('saving phase');
+  p.g.append('text').attr('x',x((peak.t+S.T)/2)).attr('y',y(yMax*0.1))
+    .attr('text-anchor','middle').attr('font-size','10px').attr('fill','#666').text('dissaving phase');
+}
+
+// ===== PLOT 5: WELFARE CURVE =====
+function plotWelfare(P, S) {
+  var p = mkSVG('plot-welfare'); if(!p||!S.ok||S.welfareCurve.length<2) return;
+  var data = S.welfareCurve;
+  var xExt = d3.extent(data,function(d){return d.T;});
+  var yExt = d3.extent(data,function(d){return d.V;});
+  var yPad = (yExt[1]-yExt[0])*0.15 || 1;
+  var x = d3.scaleLinear().domain(xExt).range([0,p.W]);
+  var y = d3.scaleLinear().domain([yExt[0]-yPad, yExt[1]+yPad]).range([p.H,0]);
+  addAxes(p,x,y,'Horizon T','Welfare V(T)');
+  var ln = d3.line().x(function(d){return x(d.T);}).y(function(d){return y(d.V);});
+  p.g.append('path').datum(data).attr('d',ln).attr('stroke',C.wlf).attr('fill','none').attr('stroke-width',2.5);
+  // Optimal T*
+  p.g.append('circle').attr('cx',x(S.T)).attr('cy',y(S.Vstar)).attr('r',5).attr('fill',C.wlf);
+  p.g.append('text').attr('x',x(S.T)+8).attr('y',y(S.Vstar)+4)
+    .attr('font-size','11px').attr('fill',C.wlf).text('T*='+S.T.toFixed(1)+', V*='+S.Vstar.toFixed(2));
+  // V_A reference
+  if(isFinite(S.VA)) {
+    p.g.append('line').attr('x1',0).attr('x2',p.W).attr('y1',y(S.VA)).attr('y2',y(S.VA))
+      .attr('stroke',C.htm).attr('stroke-dasharray','2,3').attr('stroke-width',1.5);
+    p.g.append('text').attr('x',p.W-2).attr('y',y(S.VA)-5).attr('text-anchor','end')
+      .attr('font-size','11px').attr('fill',C.htm).text('V_A='+S.VA.toFixed(2));
+  }
+  // T_A marker
+  if(S.TA>xExt[0]&&S.TA<xExt[1]) vline(p.g, x(S.TA), y, 'T_A', C.htm, '2,3');
+}
+
+// ===== RISING-R SOLVER =====
+function Rfun(t, r0, gamma) {
+  if (gamma < 1e-8) return r0 * t;
+  var gt = gamma * t;
+  if (gt > 500) return 1e200; // prevent overflow in exp
+  return r0 * (Math.exp(gt) - 1) / gamma;
+}
+// Safe exp that clamps to avoid Infinity
+function safeExp(x) { return (x > 700) ? 1e300 : (x < -700) ? 0 : Math.exp(x); }
+
+function solveRisingR(P) {
+  var r0 = P.r, rho = P.rho, eta = P.eta, w = P.w, d = P.d, A = P.A, gamma = P.gamma || 0;
+  if (gamma < 1e-8) return null; // use baseline solver
+  var TA = (w > d) ? Math.log(w/d) / eta : 0;
+  // Cap search range: beyond T where R(T) > 500, discount kills everything
+  var TmaxSearch = 300;
+  if (gamma > 1e-4) { TmaxSearch = Math.min(300, Math.log(500 * gamma / r0 + 1) / gamma); }
+
+  function surplusPVnum(T) {
+    if (T <= 0) return 0;
+    var n = 500, dt = T / n, sum = 0;
+    for (var i = 0; i <= n; i++) {
+      var t = i * dt;
+      var disc = safeExp(-Rfun(t, r0, gamma));
+      if (disc < 1e-200) break; // rest contributes nothing
+      var val = (w * Math.exp(-eta * t) - d) * disc;
+      var wt = (i === 0 || i === n) ? 1 : (i % 2 === 0 ? 2 : 4);
+      sum += wt * val;
+    }
+    return sum * dt / 3;
+  }
+  function epsilonR(T) {
+    var s = surplusPVnum(T);
+    if (s <= 0 || !isFinite(s)) return NaN;
+    var denom = (1 - Math.exp(-rho * T)) / rho;
+    if (denom < 1e-15) return NaN;
+    return s / denom;
+  }
+  // Find Tmax where surplus = 0. With rising r, surplus may stay positive (agent can live very long).
+  // Search up to a generous upper bound.
+  var TmaxUpper = Math.max(TmaxSearch, 500);
+  var Tmax = brent(surplusPVnum, 0.1, TmaxUpper);
+  // If surplus is always positive, the agent can effectively live forever. Use OS to find T directly.
+  if (Tmax === null || Tmax <= 0.2) { Tmax = TmaxUpper; }
+  // OS equation
+  function osR(T) {
+    var eps = epsilonR(T);
+    if (isNaN(eps) || eps <= 0) return NaN;
+    var Rv = Rfun(T, r0, gamma);
+    var growth = Rv - rho * T;
+    if (growth > 500) return NaN; // overflow guard
+    var logTerm = A + Math.log(eps) + growth;
+    var netInc = w * Math.exp(-eta * T) - d;
+    var denom = eps * safeExp(growth);
+    if (!isFinite(denom) || denom < 1e-200) return NaN;
+    return logTerm + netInc / denom - 1;
+  }
+  // Cap the OS search: growth = R(T)-rho*T must stay below ~500 for numerics
+  var hiOS = Tmax - 0.05;
+  // Find where growth hits ~400 and cap there
+  for (var tt = 1; tt < hiOS; tt += 0.5) {
+    if (Rfun(tt, r0, gamma) - rho * tt > 400) { hiOS = tt; break; }
+  }
+  var Tstar = null, lo = 0.05;
+  if (hiOS <= lo) return null;
+  Tstar = brent(osR, lo, hiOS);
+  if (Tstar === null) {
+    var nScan = 400;
+    for (var i = 0; i < nScan; i++) {
+      var t1 = lo + (hiOS-lo)*i/nScan, t2 = lo + (hiOS-lo)*(i+1)/nScan;
+      var f1 = osR(t1), f2 = osR(t2);
+      if (!isNaN(f1) && !isNaN(f2) && f1*f2 < 0) { Tstar = brent(osR, t1, t2); break; }
+    }
+  }
+  if (Tstar === null || isNaN(Tstar)) {
+    // OS always positive → rising returns make life always worth extending → T* effectively infinite.
+    // Show a long but finite horizon for illustration.
+    var Tillus = Math.min(hiOS * 0.8, 100);
+    var epsIllus = epsilonR(Tillus);
+    if (isNaN(epsIllus) || epsIllus <= 0) return {ok:true, infinite:true, T:Tillus, epsilon:0.01, consumption:[], wealth:[], TA:TA, gamma:gamma};
+    // Build paths up to Tillus
+    var Nill = 400, tsIll = [];
+    for (var ii=0;ii<=Nill;ii++) tsIll.push(ii*Tillus/Nill);
+    var consIll = tsIll.map(function(t){ var v=d+epsIllus*safeExp(Rfun(t,r0,gamma)-rho*t); return {t:t,c:isFinite(v)?v:d}; });
+    var wIll=[{t:0,a:0}], aI=0;
+    for (var ii=1;ii<tsIll.length;ii++) {
+      var dtt=tsIll[ii]-tsIll[ii-1];
+      var ffi=function(t,a){var rt=r0*safeExp(gamma*t);var ct=d+epsIllus*safeExp(Rfun(t,r0,gamma)-rho*t);if(!isFinite(ct))ct=d;return rt*a+w*Math.exp(-eta*t)-ct;};
+      var k1i=ffi(tsIll[ii-1],aI),k2i=ffi(tsIll[ii-1]+dtt/2,aI+dtt*k1i/2),k3i=ffi(tsIll[ii-1]+dtt/2,aI+dtt*k2i/2),k4i=ffi(tsIll[ii],aI+dtt*k3i);
+      aI+=dtt*(k1i+2*k2i+2*k3i+k4i)/6; if(!isFinite(aI))aI=0;
+      wIll.push({t:tsIll[ii],a:aI});
+    }
+    return {ok:true, infinite:true, T:Tillus, epsilon:epsIllus, consumption:consIll, wealth:wIll, TA:TA, gamma:gamma};
+  }
+  var epsStar = epsilonR(Tstar);
+  if (isNaN(epsStar) || epsStar <= 0) return null;
+  // Paths
+  var N = 400;
+  var ts = []; for (var i=0;i<=N;i++) ts.push(i*Tstar/N);
+  var cons = ts.map(function(t){
+    var v = d + epsStar * safeExp(Rfun(t,r0,gamma) - rho*t);
+    return {t:t, c: isFinite(v) ? v : d};
+  });
+  // Wealth: da/dt = r(t)*a + w*e^{-eta*t} - c(t)
+  var wealthR = [{t:0, a:0}]; var aR = 0;
+  for (var i = 1; i < ts.length; i++) {
+    var dt = ts[i] - ts[i-1];
+    var ff = function(t, a) {
+      var rt = r0 * safeExp(gamma * t);
+      var ct = d + epsStar * safeExp(Rfun(t,r0,gamma) - rho*t);
+      if (!isFinite(ct)) ct = d;
+      return rt*a + w*Math.exp(-eta*t) - ct;
+    };
+    var k1 = ff(ts[i-1], aR);
+    var k2 = ff(ts[i-1]+dt/2, aR+dt*k1/2);
+    var k3 = ff(ts[i-1]+dt/2, aR+dt*k2/2);
+    var k4 = ff(ts[i], aR+dt*k3);
+    aR += dt*(k1+2*k2+2*k3+k4)/6;
+    if (!isFinite(aR)) aR = 0;
+    wealthR.push({t:ts[i], a:aR});
+  }
+  return {ok:true, T:Tstar, epsilon:epsStar, consumption:cons, wealth:wealthR, TA:TA, gamma:gamma};
+}
+
+// ===== PLOT 6: RISING-R CONSUMPTION =====
+
+// ===== PLOT: PHI REGIONS IN (beta, w/d) PLANE =====
+// Frontier: Phi=1  <=>  w/d = k_min(beta; alpha), with alpha = gamma/eta and beta = r0/gamma.
+// k_min(beta; alpha) = E1(beta) / [ beta^{1/alpha} * Gamma(-1/alpha, beta) ].
+// We compute E1(beta) numerically on a fixed beta grid (cached), and compute Gamma(s,beta) via
+// (i) upper incomplete gamma for positive shape using series/continued fraction, then (ii) recurrence to negative s.
+
+var _phiBetaGrid = null;
+var _phiE1Cache = null;
+
+function phi_logGamma(z) {
+  var p = [
+    676.5203681218851,
+    -1259.1392167224028,
+    771.32342877765313,
+    -176.61502916214059,
+    12.507343278686905,
+    -0.13857109526572012,
+    9.9843695780195716e-6,
+    1.5056327351493116e-7
+  ];
+  if (z < 0.5) {
+    return Math.log(Math.PI) - Math.log(Math.sin(Math.PI*z)) - phi_logGamma(1-z);
+  }
+  z -= 1;
+  var x = 0.99999999999980993;
+  for (var i=0; i<p.length; i++) x += p[i]/(z+i+1);
+  var t = z + p.length - 0.5;
+  return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x);
+}
+function phi_gamma(z) { return Math.exp(phi_logGamma(z)); }
+
+// Upper incomplete gamma Gamma(a,x) for a>0, x>0
+function phi_gammaUpperPos(a, x) {
+  var EPS = 1e-12, FPMIN = 1e-300, ITMAX = 200;
+  if (x <= 0) return phi_gamma(a);
+  if (a <= 0) return NaN;
+
+  if (x < a + 1) {
+    var ap = a;
+    var sum = 1.0/a;
+    var del = sum;
+    for (var n=1; n<=ITMAX; n++) {
+      ap += 1;
+      del *= x/ap;
+      sum += del;
+      if (Math.abs(del) < Math.abs(sum)*EPS) break;
+    }
+    var pref = Math.exp(-x + a*Math.log(x) - phi_logGamma(a));
+    var P = pref * sum;
+    return phi_gamma(a) * (1 - P);
+  }
+
+  var b = x + 1 - a;
+  var c = 1/FPMIN;
+  var d = 1/b;
+  var h = d;
+  for (var i=1; i<=ITMAX; i++) {
+    var an = -i*(i-a);
+    b += 2;
+    d = an*d + b;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an/c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1/d;
+    var delh = d*c;
+    h *= delh;
+    if (Math.abs(delh-1.0) < EPS) break;
+  }
+  var pref2 = Math.exp(-x + a*Math.log(x) - phi_logGamma(a));
+  var Q = pref2 * h;
+  return phi_gamma(a) * Q;
+}
+
+function phi_gammaUpperSigned(s, x) {
+  if (!isFinite(s) || !isFinite(x) || x <= 0) return NaN;
+  var n = 0;
+  if (s <= 0) n = Math.floor(-s) + 1;
+  var a = s + n;
+  if (a <= 0) return NaN;
+
+  var G = phi_gammaUpperPos(a, x);
+  for (var k=n-1; k>=0; k--) {
+    var sk = s + k;
+    var term = Math.exp(sk*Math.log(x) - x);
+    G = (G - term) / sk;
+  }
+  return G;
+}
+
+// Numerical E1(x) = ∫_x^∞ e^{-u}/u du with substitution u = x + t/(1-t)
+function phi_E1_num(x) {
+  var eps = 1e-8;
+  var N = 900; if (N % 2 === 1) N += 1;
+  var tMax = 1 - eps;
+  var h = tMax / N;
+  function g(t) {
+    var omt = 1 - t;
+    var u = x + t/omt;
+    var du = 1/(omt*omt);
+    var val = Math.exp(-u)/u * du;
+    return isFinite(val) ? val : 0;
+  }
+  var s = g(0) + g(tMax);
+  for (var i=1; i<N; i++) s += (i%2===0 ? 2 : 4) * g(i*h);
+  return s*h/3;
+}
+
+function phi_buildGrid() {
+  var n = 140;
+  var bMin = 1e-3, bMax = 200;
+  var betas = [];
+  for (var i=0; i<n; i++) {
+    var t = i/(n-1);
+    betas.push(bMin*Math.pow(bMax/bMin, t));
+  }
+  _phiBetaGrid = betas;
+  _phiE1Cache = betas.map(function(b){ return phi_E1_num(b); });
+}
+
+function phi_kMin(beta, alpha, e1beta) {
+  if (alpha <= 0) return NaN;
+  var s = -1.0/alpha;
+  var G = phi_gammaUpperSigned(s, beta);
+  if (!isFinite(G) || G === 0) return NaN;
+  var pow = Math.exp((1.0/alpha)*Math.log(beta));
+  var k = e1beta/(pow*G);
+  return (isFinite(k) && k>0) ? k : NaN;
+}
+
+function plotPhiPlane(P) {
+  var p = mkSVG('plot-phi-plane', 620, 340); if(!p) return;
+  if (!_phiBetaGrid || !_phiE1Cache) phi_buildGrid();
+
+  var alpha = P.gammaOverEta;
+  if (!isFinite(alpha) || alpha < 0.05) {
+    var x0 = d3.scaleLinear().domain([0,1]).range([0,p.W]);
+    var y0 = d3.scaleLinear().domain([0,1]).range([p.H,0]);
+    addAxes(p,x0,y0,'beta = r0/gamma','w/d');
+    p.g.append('text').attr('x',p.W/2).attr('y',p.H/2).attr('text-anchor','middle')
+      .attr('fill','#888').attr('font-size','12px')
+      .text('Increase gamma/eta to display the (beta, w/d) immortality frontier');
+    return;
+  }
+
+  var betas = _phiBetaGrid;
+  var e1s = _phiE1Cache;
+  var curve = betas.map(function(b,i){ return {beta:b, k: phi_kMin(b, alpha, e1s[i])}; })
+                   .filter(function(d){ return isFinite(d.k); });
+
+  var bMin = betas[0], bMax = betas[betas.length-1];
+  var yMin = 0.5;
+  var yMax = Math.max(5, d3.max(curve, function(d){return d.k;})*1.15);
+  yMax = Math.min(Math.max(yMax, 3), 12);
+
+  var x = d3.scaleLog().domain([bMin,bMax]).range([0,p.W]);
+  var y = d3.scaleLinear().domain([yMin,yMax]).range([p.H,0]);
+    addAxes(p, x, y, 'β = r(0)/γ (log)', 'w/d');
+
+  var areaAbove = d3.area()
+    .x(function(d){return x(d.beta);})
+    .y0(function(d){return y(d.k);})
+    .y1(y(yMax));
+  var areaBelow = d3.area()
+    .x(function(d){return x(d.beta);})
+    .y0(y(yMin))
+    .y1(function(d){return y(d.k);});
+
+  p.g.append('path').datum(curve).attr('d',areaAbove).attr('fill','#c7e9c0').attr('opacity',0.85);
+  p.g.append('path').datum(curve).attr('d',areaBelow).attr('fill','#fdd0a2').attr('opacity',0.90);
+
+  var ln = d3.line().x(function(d){return x(d.beta);}).y(function(d){return y(d.k);});
+  p.g.append('path').datum(curve).attr('d',ln)
+    .attr('stroke','#08519c').attr('stroke-width',2.2).attr('fill','none');
+
+  p.g.append('text').attr('x',10).attr('y',14).attr('fill','#2b8cbe').attr('font-size','11px')
+    .text('alpha = gamma/eta = ' + alpha.toFixed(2));
+  p.g.append('text').attr('x',10).attr('y',30).attr('fill','#238b45').attr('font-size','11px')
+    .text('Above curve: Phi > 1');
+  p.g.append('text').attr('x',10).attr('y',46).attr('fill','#d94801').attr('font-size','11px')
+    .text('Below curve: Phi < 1');
+
+  // Show current point implied by sliders (if gamma > 0)
+  if (P.gamma && P.gamma > 0) {
+    var betaNow = P.r / P.gamma;
+    var wdNow = P.w / P.d;
+    if (betaNow >= bMin && betaNow <= bMax && wdNow >= yMin && wdNow <= yMax) {
+      p.g.append('circle').attr('cx', x(betaNow)).attr('cy', y(wdNow)).attr('r',4.2)
+        .attr('fill','#000').attr('opacity',0.65);
+      p.g.append('text').attr('x', x(betaNow)+6).attr('y', y(wdNow)-6)
+        .attr('font-size','10px').attr('fill','#333').text('current');
+    }
+  }
+}
+
+function plotRisingRConsumption(P, S, SR) {
+  var p = mkSVG('plot-risingr-consumption'); if(!p) return;
+
+  // Hand-to-mouth path (independent of gamma): c_A(t)=w e^{-eta t} until T_A
+  var TA = (P.w > P.d) ? Math.log(P.w/P.d) / P.eta : 0;
+  var htm = [];
+  if (TA > 0 && isFinite(TA)) {
+    var Nh = 350;
+    for (var i=0;i<=Nh;i++) {
+      var t = i*TA/Nh;
+      htm.push({t:t, c: P.w*Math.exp(-P.eta*t)});
+    }
+  }
+
+  if (!SR || !SR.ok) {
+    // If gamma not set / solver unavailable, keep the baseline cue, but still show HTM.
+    if (!S || !S.ok) return;
+    var xMax0 = Math.max(S.Tplot, TA) * 1.02;
+    var yMax0 = Math.max(d3.max(S.consumption, function(d){return d.c;})*1.1, P.d*2, P.w*1.05);
+    var x0 = d3.scaleLinear().domain([0,xMax0]).range([0,p.W]);
+    var y0 = d3.scaleLinear().domain([0,yMax0]).range([p.H,0]);
+    addAxes(p,x0,y0,'Time t','Consumption');
+    p.g.append('line').attr('x1',0).attr('x2',p.W).attr('y1',y0(P.d)).attr('y2',y0(P.d))
+      .attr('stroke',C.sub).attr('stroke-width',1.5).attr('stroke-dasharray','6,3');
+    var ln0 = d3.line().x(function(d){return x0(d.t);}).y(function(d){return y0(d.c);});
+    p.g.append('path').datum(S.consumption).attr('d',ln0).attr('stroke',C.opt).attr('fill','none').attr('stroke-width',2).attr('opacity',0.4);
+    if (htm.length>1) p.g.append('path').datum(htm).attr('d',ln0).attr('stroke',C.htm).attr('fill','none').attr('stroke-width',2).attr('stroke-dasharray','2,3');
+    if (TA > 0 && TA < xMax0) vlineBottom(p.g, x0(TA), y0, 'T_A='+TA.toFixed(1), C.htm, '2,3');
+    p.g.append('text').attr('x',p.W/2).attr('y',p.H/2).attr('text-anchor','middle').attr('fill','#888').attr('font-size','12px').text('Set γ > 0 to see rising-return paths');
+    return;
+  }
+
+  // Use baseline y-scale as cap so infinite paths don't explode the axis
+  var baseYMax = (S && S.ok) ? d3.max(S.consumption, function(d){return d.c;})*1.5 : P.d*3;
+  var yMax = SR.infinite ? baseYMax : Math.max(d3.max(SR.consumption,function(d){return d.c;})*1.1, baseYMax);
+  // Ensure hand-to-mouth is visible
+  yMax = Math.max(yMax, P.w*1.05);
+
+  var xMax = SR.infinite ? ((S && S.ok) ? S.T*1.5 : 20) : Math.max((S && S.ok)?S.T:0, SR.T)*1.1;
+  xMax = Math.max(xMax, TA*1.05);
+
+  var x = d3.scaleLinear().domain([0,xMax]).range([0,p.W]);
+  var y = d3.scaleLinear().domain([0,yMax]).range([p.H,0]);
+
+  // Clip to plot area
+  p.svg.append('defs').append('clipPath').attr('id','clip6')
+    .append('rect').attr('width',p.W).attr('height',p.H);
+  var clip = p.g.append('g').attr('clip-path','url(#clip6)');
+
+  addAxes(p,x,y,'Time t','Consumption');
+
+  // Subsistence floor
+  p.g.append('line').attr('x1',0).attr('x2',p.W).attr('y1',y(P.d)).attr('y2',y(P.d))
+    .attr('stroke',C.sub).attr('stroke-width',1.5).attr('stroke-dasharray','6,3');
+
+  var ln = d3.line().x(function(d){return x(d.t);}).y(function(d){return y(d.c);}).defined(function(d){return isFinite(d.c);});
+
+  // Baseline optimal (constant r)
+  if (S && S.ok) clip.append('path').datum(S.consumption).attr('d',ln)
+    .attr('stroke',C.opt).attr('fill','none').attr('stroke-width',2).attr('opacity',0.4).attr('stroke-dasharray','6,3');
+
+  // Hand-to-mouth
+  if (htm.length>1) clip.append('path').datum(htm.filter(function(d){return d.t<=xMax;})).attr('d',ln)
+    .attr('stroke',C.htm).attr('fill','none').attr('stroke-width',2).attr('stroke-dasharray','2,3');
+
+  // Rising-return optimal
+  clip.append('path').datum(SR.consumption.filter(function(d){return d.t<=xMax;})).attr('d',ln)
+    .attr('stroke','#e6550d').attr('fill','none').attr('stroke-width',2.5);
+
+  // Markers: labels at bottom
+  if (SR.infinite) {
+    p.g.append('text').attr('x',p.W-5).attr('y',p.H-6).attr('text-anchor','end').attr('font-size','11px').attr('fill','#e6550d')
+      .text('T* = ∞ (rising returns sustain life)');
+  } else {
+    vlineBottom(p.g, x(SR.T), y, 'T*(γ)='+SR.T.toFixed(1), '#e6550d');
+  }
+
+  // Base T* label lifted a bit to avoid overlap with T*(gamma)
+  if (S && S.ok) {
+    vlineBottom(p.g, x(S.T), y, null, C.opt);
+    p.g.append('text').attr('x', x(S.T)+3).attr('y', y.range()[0]-18)
+      .attr('fill', C.opt).attr('font-size','11px').text('T*(base)='+S.T.toFixed(1));
+  }
+
+  if (TA>0 && TA<xMax) vlineBottom(p.g, x(TA), y, 'T_A='+TA.toFixed(1), C.htm, '2,3');
+
+  // Legend
+  var lg = p.g.append('g').attr('transform','translate('+(p.W-190)+',5)');
+  [{c:'#e6550d',t:'c*(t) rising r',dash:''},
+   {c:C.opt,t:'c*(t) constant r',dash:'6,3'},
+   {c:C.htm,t:'c_A(t) hand-to-mouth',dash:'2,3'}].forEach(function(d,i){
+    lg.append('line').attr('x1',0).attr('x2',20).attr('y1',i*16).attr('y2',i*16)
+      .attr('stroke',d.c).attr('stroke-width',2).attr('stroke-dasharray',d.dash||'none')
+      .attr('opacity',d.dash==='6,3'?0.4:1);
+    lg.append('text').attr('x',24).attr('y',i*16+4).attr('font-size','10px').attr('fill','#333').text(d.t);
+  });
+}
+
+// ===== PLOT 7: RISING-R WEALTH =====
+function plotRisingRWealth(P, S, SR) {
+  var p = mkSVG('plot-risingr-wealth'); if(!p) return;
+  if (!SR || !SR.ok) {
+    if (!S || !S.ok) return;
+    var x = d3.scaleLinear().domain([0,S.T]).range([0,p.W]);
+    var yMax = d3.max(S.wealth,function(d){return d.a;})*1.2||1;
+    var y = d3.scaleLinear().domain([0,yMax]).range([p.H,0]);
+    addAxes(p,x,y,'Time t','Wealth a(t)');
+    var ln = d3.line().x(function(d){return x(d.t);}).y(function(d){return y(d.a);});
+    p.g.append('path').datum(S.wealth).attr('d',ln).attr('stroke',C.wth).attr('fill','none').attr('stroke-width',2).attr('opacity',0.4);
+    p.g.append('text').attr('x',p.W/2).attr('y',p.H/2).attr('text-anchor','middle').attr('fill','#888').attr('font-size','12px').text('Set \u03b3 > 0 to see rising-return wealth');
+    return;
+  }
+  // Cap y-axis: use baseline peak as reference, allow modest expansion
+  var basePeak = S.ok ? d3.max(S.wealth,function(d){return d.a;}) : 1;
+  var yMax = SR.infinite ? basePeak * 2 : Math.max(d3.max(SR.wealth,function(d){return d.a;})*1.2, basePeak*1.2);
+  var xMax = SR.infinite ? (S.ok ? S.T * 1.5 : 20) : Math.max(S.ok?S.T:0, SR.T) * 1.1;
+  var x = d3.scaleLinear().domain([0,xMax]).range([0,p.W]);
+  var y = d3.scaleLinear().domain([0,yMax]).range([p.H,0]);
+  // Clip to plot area
+  p.svg.append('defs').append('clipPath').attr('id','clip7')
+    .append('rect').attr('width',p.W).attr('height',p.H);
+  var clip = p.g.append('g').attr('clip-path','url(#clip7)');
+  addAxes(p,x,y,'Time t','Wealth a(t)');
+  var ln = d3.line().x(function(d){return x(d.t);}).y(function(d){return y(d.a);}).defined(function(d){return isFinite(d.a);});
+  var area = d3.area().x(function(d){return x(d.t);}).y0(p.H).y1(function(d){return y(Math.max(0,Math.min(d.a,yMax)));}).defined(function(d){return isFinite(d.a);});
+  clip.append('path').datum(SR.wealth.filter(function(d){return d.t<=xMax;})).attr('d',area).attr('fill','#e6550d').attr('opacity',0.1);
+  clip.append('path').datum(SR.wealth.filter(function(d){return d.t<=xMax;})).attr('d',ln).attr('stroke','#e6550d').attr('fill','none').attr('stroke-width',2.5);
+  if (S.ok) clip.append('path').datum(S.wealth).attr('d',ln).attr('stroke',C.wth).attr('fill','none').attr('stroke-width',2).attr('opacity',0.4).attr('stroke-dasharray','6,3');
+  if (SR.infinite) {
+    p.g.append('text').attr('x',p.W-5).attr('y',18).attr('text-anchor','end').attr('font-size','11px').attr('fill','#e6550d').text('T* = \u221e  \u2014  wealth and consumption grow without bound');
+  } else {
+    var peak = SR.wealth.reduce(function(a,b){return b.a>a.a?b:a;});
+    p.g.append('circle').attr('cx',x(peak.t)).attr('cy',y(peak.a)).attr('r',4).attr('fill','#e6550d');
+    p.g.append('text').attr('x',x(peak.t)+6).attr('y',y(peak.a)-6)
+      .attr('font-size','11px').attr('fill','#e6550d').text('peak: '+peak.a.toFixed(2));
+  }
+  var lg = p.g.append('g').attr('transform','translate('+(p.W-160)+',5)');
+  [{c:'#e6550d',t:'a(t) rising r',dash:''},{c:C.wth,t:'a(t) constant r',dash:'6,3'}].forEach(function(d,i){
+    lg.append('line').attr('x1',0).attr('x2',20).attr('y1',i*16).attr('y2',i*16)
+      .attr('stroke',d.c).attr('stroke-width',2).attr('stroke-dasharray',d.dash||'none').attr('opacity',d.dash?0.4:1);
+    lg.append('text').attr('x',24).attr('y',i*16+4).attr('font-size','10px').attr('fill','#333').text(d.t);
+  });
+}
+
+// ===== STATE & UPDATE =====
+var state = {r:0.08, rho:0.03, eta:0.10, w:2.0, d:1.0, A:3.0, gammaOverEta:2};
+var defaults = {r:0.08, rho:0.03, eta:0.10, w:2.0, d:1.0, A:3.0, gammaOverEta:2};
+var fmt3 = function(v){return v.toFixed(3);};
+var fmt2 = function(v){return v.toFixed(2);};
+
+function updateBadges(S) {
+  var be=document.getElementById('b-eps'), bT=document.getElementById('b-T'),
+      bTA=document.getElementById('b-TA'), bV=document.getElementById('b-V'),
+      bVA=document.getElementById('b-VA'), bS=document.getElementById('b-status');
+  if(S.ok) {
+    be.textContent=fmt3(S.epsilon); bT.textContent=fmt2(S.T);
+    bTA.textContent=fmt2(S.TA); bV.textContent=fmt2(S.Vstar);
+    bVA.textContent=isFinite(S.VA)?fmt2(S.VA):'—';
+    bS.style.display='none'; bS.className='badge';
+  } else {
+    be.textContent='—'; bT.textContent='—'; bV.textContent='—'; bVA.textContent='—';
+    bTA.textContent=S.TA?fmt2(S.TA):'—';
+    bS.style.display=''; bS.className='badge warning'; bS.textContent=S.reason;
+  }
+}
+function update() {
+  state.gamma = state.gammaOverEta * state.eta;
+  var S = solveSystem(state);
+  updateBadges(S);
+  plotIncome(state, S);
+  plotPV(state, S);
+  plotPhiPlane(state);
+  plotConsumption(state, S);
+  plotWealth(state, S);
+  plotWelfare(state, S);
+  var SR = solveRisingR(state);
+  plotRisingRConsumption(state, S, SR);
+  plotRisingRWealth(state, S, SR);
+}
+// Wire sliders — reject any move that breaks solver convergence
+function fmtSlider(nm, val) {
+  return (nm==='w'||nm==='d'||nm==='A') ? fmt2(val) : (nm==='gammaOverEta') ? val.toFixed(2) : fmt3(val);
+}
+document.querySelectorAll('.param-slider').forEach(function(inp) {
+  inp.addEventListener('input', function(e) {
+    var nm = e.target.name, val = parseFloat(e.target.value);
+    // Save previous state
+    var prev = {}; Object.keys(state).forEach(function(k) { prev[k] = state[k]; });
+    // Apply candidate value
+    state[nm] = val;
+    state.gamma = state.gammaOverEta * state.eta;
+    // Test convergence — baseline solver must always converge
+    var S = solveSystem(state);
+    if (!S.ok) {
+      // Revert state and slider position
+      Object.keys(prev).forEach(function(k) { state[k] = prev[k]; });
+      e.target.value = prev[nm];
+      // Flash the reason in the status badge
+      var bS = document.getElementById('b-status');
+      bS.style.display = ''; bS.className = 'badge warning'; bS.textContent = S.reason;
+      clearTimeout(bS._timer);
+      bS._timer = setTimeout(function() { bS.style.display = 'none'; bS.className = 'badge'; }, 2000);
+      return;
+    }
+    var bS = document.getElementById('b-status');
+    bS.style.display = 'none'; bS.className = 'badge';
+    var disp = document.getElementById('v-'+nm);
+    if(disp) disp.textContent = fmtSlider(nm, val);
+    update();
+  });
+});
+document.getElementById('btn-reset').addEventListener('click', function() {
+  Object.keys(defaults).forEach(function(k) {
+    state[k] = defaults[k];
+    var inp = document.querySelector('input[name="'+k+'"]');
+    if(inp) inp.value = defaults[k];
+    var disp = document.getElementById('v-'+k);
+    if(disp) disp.textContent = fmtSlider(k, defaults[k]);
+  });
+  update();
+});
+// Match panel background to page
+document.getElementById('controls-panel').style.backgroundColor = getComputedStyle(document.body).backgroundColor;
+// KaTeX
+renderMathInElement(document.body, {
+  delimiters: [
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}
+  ],
+  throwOnError: false
+});
+// Initial render
+update();
+});
+</script>
+</body>
+</html>
