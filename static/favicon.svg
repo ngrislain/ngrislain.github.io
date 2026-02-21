@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff4444"/>
+      <stop offset="40%" stop-color="#cc0000"/>
+      <stop offset="100%" stop-color="#440000"/>
+    </radialGradient>
+    <radialGradient id="lens" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffaaaa" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#ff2200" stop-opacity="0.7"/>
+      <stop offset="70%" stop-color="#cc0000" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#660000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ring" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" stop-color="#1a1a1a"/>
+      <stop offset="85%" stop-color="#333333"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </radialGradient>
+  </defs>
+  <!-- Dark background -->
+  <rect width="64" height="64" rx="8" fill="#111111"/>
+  <!-- Outer metallic ring -->
+  <circle cx="32" cy="32" r="26" fill="url(#ring)" stroke="#444" stroke-width="1.5"/>
+  <!-- Inner dark bezel -->
+  <circle cx="32" cy="32" r="20" fill="#0a0a0a" stroke="#333" stroke-width="0.5"/>
+  <!-- Red glow -->
+  <circle cx="32" cy="32" r="15" fill="url(#glow)"/>
+  <!-- Lens highlight -->
+  <circle cx="32" cy="32" r="12" fill="url(#lens)"/>
+  <!-- Bright center dot -->
+  <circle cx="30" cy="29" r="4" fill="#ffcccc" opacity="0.6"/>
+  <circle cx="30" cy="29" r="2" fill="white" opacity="0.8"/>
+</svg>

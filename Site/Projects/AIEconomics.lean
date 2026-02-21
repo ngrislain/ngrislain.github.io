@@ -31,8 +31,8 @@ The paper is short, somewhat irreverent, and comes with interactive visualizatio
 
 # How it was made
 
-This was my first serious experimentation using frontier LLMs on a research project. Starting from Yannick's idea and a few days of pen-and-paper scribbling to sharpen intuitions, get a clear formulation of the optimization problem, and understand the shape of the solution, we delegated most of the execution to AI. After a few back-and-forth prompting rounds — mainly with Claude and GPT — to get proper visualization, polish the text, and explore extensions, voila, we got the paper.
+This was my first application of frontier LLMs to economics research. Starting from Yannick's idea and a few days of pen-and-paper scribbling to sharpen intuitions, get a clear formulation of the optimization problem, and understand the shape of the solution, we delegated most of the execution to AI. After a few back-and-forth prompting rounds — mainly with Claude and GPT — to get proper visualization, polish the text, and explore extensions, voila, we got the paper.
 
-The whole process took a few hours of work here and there over a two-week span, on top of our regular full-time jobs. This is truly amazing, but as the paper itself suggests, there may be some big downsides to it.
+The whole process took a few hours of work here and there over a few days, on top of our regular full-time jobs. This is truly amazing, but as the paper itself suggests, there may be some big downsides to it.
 
 [Read the paper here.](static/projects/ai-economics/ai-economics.html)

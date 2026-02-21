@@ -124,6 +124,7 @@ private def primary : Template := do
         <title>{{← param (α := String) "title"}}" | "{{siteTitle}}</title>
         <script>{{themeToggleScript}}</script>
         {{← builtinHeader}}
+        <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
         <link rel="stylesheet" href="static/chalk.css" type="text/css"/>
       </head>
       <body>

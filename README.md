@@ -7,6 +7,7 @@ This repository hosts the Lean 4/Verso source for [ngrislain.github.io](https://
 ```bash
 lake update
 lake exe ngrislain-github-io --output build
+(cd build && python -m http.server )
 ```
 
 The generated static site is written to the `build/` directory. Open `build/index.html` in a browser to preview the site locally.
