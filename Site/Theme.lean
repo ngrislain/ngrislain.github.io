@@ -64,6 +64,16 @@ private def themeToggleScript : String :=
   })();
   "
 
+private def highlightInitScript : String :=
+  "
+  document.querySelectorAll('pre').forEach(function(pre) {
+    if (!pre.querySelector('.hl') && !pre.classList.contains('hl')) {
+      pre.classList.add('language-lean');
+      hljs.highlightElement(pre);
+    }
+  });
+  "
+
 private def themeToggleClickScript : String :=
   "
   document.getElementById('theme-toggle').addEventListener('click', function() {
@@ -126,6 +136,9 @@ private def primary : Template := do
         {{← builtinHeader}}
         <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
         <link rel="stylesheet" href="static/chalk.css" type="text/css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script src="https://unpkg.com/highlightjs-lean@1.2.0/dist/lean.min.js"></script>
       </head>
       <body>
         {{← navigation}}
@@ -136,6 +149,7 @@ private def primary : Template := do
         </main>
         {{footer}}
         <script>{{themeToggleClickScript}}</script>
+        <script>{{highlightInitScript}}</script>
       </body>
     </html>
   }}

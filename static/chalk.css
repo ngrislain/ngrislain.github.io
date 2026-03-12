@@ -15,7 +15,7 @@
     --secondary: rgb(108, 108, 108);
     --tertiary: rgb(214, 214, 214);
     --content: rgb(31, 31, 31);
-    --code-block-bg: rgb(28, 29, 33);
+    --code-block-bg: #0d1117;
     --code-bg: rgb(245, 245, 245);
     --border: rgb(238, 238, 238);
     color-scheme: light;
@@ -364,11 +364,12 @@ code {
     display: block;
     margin: auto 0;
     padding: 10px;
-    color: rgb(213, 213, 214);
+    color: #c9d1d9;
     background: var(--code-block-bg) !important;
     border-radius: var(--radius);
     overflow-x: auto;
-    word-break: break-all;
+    word-break: normal;
+    white-space: pre;
 }
 
 div.highlight,
@@ -639,6 +640,77 @@ pre {
 /* ===== Utility: smooth scrolling ===== */
 html {
     scroll-behavior: smooth;
+}
+
+/* ===== Highlight.js token colors ===== */
+/* Override highlight.js default background so it uses our theme variables */
+.post-content pre code.hljs,
+.post-content pre.hljs {
+    background: var(--code-block-bg) !important;
+    color: #c9d1d9;
+    padding: 10px;
+    font-size: 0.78em;
+    line-height: 1.5;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    word-break: normal;
+    white-space: pre;
+}
+
+/* GitHub Dark syntax highlighting — !important to override the default hljs
+   theme loaded from CDN, as well as language-specific plugin defaults */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in {
+    color: #ff7b72 !important;
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_ {
+    color: #d2a8ff !important;
+}
+
+.hljs-string,
+.hljs-attr {
+    color: #a5d6ff !important;
+}
+
+.hljs-comment,
+.hljs-doctag {
+    color: #8b949e !important;
+    font-style: italic;
+}
+
+.hljs-number,
+.hljs-literal {
+    color: #79c0ff !important;
+}
+
+.hljs-type {
+    color: #ffa657 !important;
+}
+
+.hljs-meta {
+    color: #c9d1d9 !important;
+}
+
+.hljs-params {
+    color: #c9d1d9 !important;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+    color: #ffa657 !important;
+}
+
+.hljs-symbol {
+    color: #79c0ff !important;
+}
+
+/* Lean-specific highlight.js classes */
+.hljs-theorem {
+    color: #c9d1d9 !important;
 }
 
 /* ===== KaTeX overrides ===== */
