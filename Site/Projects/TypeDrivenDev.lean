@@ -16,7 +16,9 @@ AI can write code fast. But can it write *correct* code?
 
 Vibe coding has grown up. What started as "prompt and pray" has evolved into a serious engineering discipline: practitioners design verification harnesses, write rule files, set up automated test suites, and let AI agents run autonomously for hours. The human role has shifted from writing code to defining constraints and reviewing outputs. The results are impressive — and improving fast.
 
-Yet a fundamental tension remains. However sophisticated the harness, the specification and the implementation are separate artifacts. The constraints live in one place, the code in another, and the link between them must be continuously checked by external tooling. There is always a gap between intent and implementation — a gap that can be narrowed, but never closed.
+This shift has a corollary that is rarely stated: if humans no longer read most of the generated code, then optimizing a language for human readability is no longer the priority it once was. The appeal of Python or JavaScript — clear syntax, gentle learning curve — mattered when humans were the primary authors *and* readers. In a world where AI writes the implementation and humans mostly define intent, the value of a language increasingly lies in how precisely it can express *what* the code should do, not in how pleasantly a human can read *how* it does it. Languages will likely shift their focus from implementation ergonomics to specification power.
+
+Yet today, a fundamental tension remains. However sophisticated the harness, the specification and the implementation are separate artifacts. The constraints live in one place, the code in another, and the link between them must be continuously checked by external tooling. There is always a gap between intent and implementation — a gap that can be narrowed, but never closed.
 
 What if the type system *were* the specification?
 
