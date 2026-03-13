@@ -147,7 +147,7 @@ def List.sort (total : ∀ (a b : α), a ≤ b ∨ b ≤ a) (l : List α) : Sort
   ⟨l.insertionSort, List.insertionSort_sorted total l⟩
 ```
 
-The implementation is proven correct. However, it is $`O(n^2)`.
+The implementation is proven correct ([full code](https://gist.github.com/ngrislain/2f0c8486aea1a0977092ed1fb38d55ad)). However, it is $`O(n^2)`.
 
 # Second attempt: merge sort ($`O(n \log n)`)
 
@@ -198,7 +198,7 @@ def List.sort (total : ∀ (a b : α), a ≤ b ∨ b ≤ a) (l : List α) : Sort
   ⟨l.mergeSort, List.mergeSort_sorted total l⟩
 ```
 
-Same spec. Better algorithm. The compiler is happy either way.
+Same spec. Better algorithm. The compiler is happy either way ([full code](https://gist.github.com/ngrislain/19eff850b02e4cca2af10fdf451e4580)).
 
 # The feedback loop
 
@@ -239,5 +239,3 @@ This is a closed, formal feedback loop — a natural evolution of the harness-fi
 Lean 4, in particular, is well-positioned for this moment. It is a modern language with good tooling, a fast compiler, and a type system powerful enough to express real-world specifications. The Curry-Howard correspondence is not merely a theoretical curiosity — it is the engineering principle. Every type is a theorem. Every program is a proof. Every compilation is a verification.
 
 Harness-first vibe coding established the right pattern: humans specify, AI implements, automated systems verify. Type-driven development is the natural culmination of that pattern — one where specification, implementation, and verification are unified in the same language, with no gaps between them.
-
-The [full code](https://gist.github.com/ngrislain/19eff850b02e4cca2af10fdf451e4580) is on GitHub.
