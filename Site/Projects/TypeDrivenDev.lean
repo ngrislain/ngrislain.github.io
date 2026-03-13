@@ -2,7 +2,7 @@ import VersoBlog
 
 open Verso Genre Blog
 
-#doc (Post) "Vibe Coding Needs Guardrails — Enter Type-Driven Development" =>
+#doc (Post) "Don't Vibe — Prove" =>
 
 %%%
 authors := ["Nicolas Grislain"]
@@ -12,35 +12,35 @@ date := { year := 2026, month := 03, day := 12 }
 ```leanInit ctx
 ```
 
-AI can write code fast. Scarily fast. But can it write *correct* code?
+AI can write code fast. But can it write *correct* code?
 
-If you've spent any time vibe-coding — prompting an LLM, accepting the output, prompting again — you know the feeling: the code *looks* right, the tests pass (when there are tests), and yet something feels fragile. You're building on vibes, not on guarantees. The feedback loop is: prompt, eyeball, ship. And when it breaks, you prompt again.
+Vibe coding has grown up. What started as "prompt and pray" has evolved into a serious engineering discipline: practitioners design verification harnesses, write rule files, set up automated test suites, and let AI agents run autonomously for hours. The human role has shifted from writing code to defining constraints and reviewing outputs. The results are impressive — and improving fast.
 
-This works surprisingly well for prototyping. It works less well for anything where correctness matters. The problem is not that AI writes buggy code — humans do that too. The problem is that the *specification* of what "correct" means usually lives in your head, in a Jira ticket, or in a comment that says `// TODO: handle edge cases`. The machine has no way to check its own work against a formal contract.
+Yet a fundamental tension remains. However sophisticated the harness, the specification and the implementation are separate artifacts. The constraints live in one place, the code in another, and the link between them must be continuously checked by external tooling. There is always a gap between intent and implementation — a gap that can be narrowed, but never closed.
 
-What if the type system *was* the specification?
+What if the type system *were* the specification?
 
 # Types as specifications
 
-Most programmers think of types as labels: this is an `int`, that's a `string`. But in languages with *dependent types*, types can express *properties*. Not just "this is a list" but "this is a list *that is sorted*". Not just "this function returns a list" but "this function returns a list *and here is a machine-checked proof that it is sorted*".
+Any type system expresses *some* properties — even `int` vs `string` rules out a class of errors. Richer type systems express richer properties: generics constrain relationships between types, linear types track resource ownership, refinement types attach predicates to base types. But *dependent types* go further: types can depend on *values*, which makes the type language expressive enough to state arbitrary logical propositions. Not just "this is a list" but "this is a list *of length n*." Not just "this function returns a list" but "this function returns a list *and here is a machine-checked proof that it is sorted*."
 
-This is not science fiction. This is [Lean 4](https://lean-lang.org/) today.
+This is not speculative. This is [Lean 4](https://lean-lang.org/) today.
 
-The deep reason this works is the *Curry-Howard correspondence* — one of the most beautiful ideas in computer science. It says that types *are* propositions, and programs *are* proofs. A function of type `A → B` is not just a piece of code that transforms `A` into `B` — it is a constructive proof that "if `A`, then `B`." When you write `List α → SortedList α`, you are simultaneously defining a function and stating a theorem: "for every list, there exists a sorted version, and here is the evidence." The compiler doesn't just check that your code runs — it checks that your *proof* is valid.
+The theoretical foundation is the *Curry-Howard correspondence*: types *are* propositions, and programs *are* proofs. A function of type `A → B` is not merely a piece of code that transforms `A` into `B` — it is a constructive proof that "if `A`, then `B`." When one writes `List α → SortedList α`, one is simultaneously defining a function and stating a theorem: "for every list, there exists a sorted version, and here is the evidence." The compiler does not merely check that the code runs — it checks that the *proof* is valid.
 
-The thesis is simple: *if you can express your specification as a type, the compiler becomes your verifier.* The AI can write whatever implementation it wants — insertion sort, merge sort, something bizarre — and the compiler will reject it unless it comes with a valid proof that the output satisfies the spec. No tests needed. No eyeballing. The proof *is* the guarantee.
+The thesis follows directly: *if the specification can be expressed as a type, the compiler becomes the verifier.* The AI can produce whatever implementation it wants — insertion sort, merge sort, something entirely novel — and the compiler will reject it unless it comes with a valid proof that the output satisfies the specification. The proof *is* the guarantee.
 
-I believe we are entering a golden age of type-driven development. Not despite AI, but *because* of it. AI is very good at generating code and filling in proof obligations. Humans are good at stating what they actually want. Dependent types are the bridge.
+There is good reason to believe we are entering a golden age of type-driven development. Not despite AI, but *because* of it. AI is effective at generating code and filling in proof obligations. Humans are effective at stating what they want. Dependent types are the bridge.
 
 # A worked example: sorting with proof
 
-Let's walk through a concrete example. We'll define a linked list, express what it means for a list to be sorted, define the type of sorted lists, and then ask AI to implement a sort function — twice, with two different algorithms — where the *type* alone forces correctness.
+The following example defines a linked list, expresses what it means for a list to be sorted, defines the type of sorted lists, and then demonstrates two AI-generated sort implementations — using different algorithms — where the *type* alone forces correctness.
 
 All code is in Lean 4 and compiles without `sorry`.
 
 ## Defining a list
 
-A classic inductive type — a list is either empty (`nil`) or an element followed by another list (`cons`):
+A standard inductive type — a list is either empty (`nil`) or an element followed by another list (`cons`):
 
 ```
 inductive List (α : Type) where
@@ -48,7 +48,7 @@ inductive List (α : Type) where
   | cons : α → List α → List α
 ```
 
-Nothing surprising here. This is the same definition you'd find in any functional programming textbook.
+This is the standard definition found in any functional programming textbook.
 
 ## Expressing "sorted"
 
@@ -75,11 +75,11 @@ structure SortedList (α : Type) [LE α] where
   sorted : Sorted list
 ```
 
-A `SortedList` is not just a list. It is a list *plus a certificate* that it is sorted. You cannot forge one.
+A `SortedList` is not merely a list. It is a list *together with a certificate* that it is sorted. There is no way to construct one without providing the proof.
 
 ## The specification *is* the type
 
-Here is the key insight. The signature:
+The key insight is in the signature:
 
 ```
 def List.sort : List α → SortedList α
@@ -89,7 +89,7 @@ This is simultaneously a *function signature* and a *specification*. It says: "g
 
 # First attempt: insertion sort ($`O(n^2)`)
 
-The first implementation, generated in a conversation with Claude, uses insertion sort. The algorithm is simple: insert each element into its correct position in an already-sorted list.
+The first implementation, generated by Claude, uses insertion sort: insert each element into its correct position in an already-sorted list.
 
 ```
 def List.insert (x : α) : List α → List α
@@ -138,18 +138,18 @@ theorem List.insert_sorted
           exact .cons y z (zs.insert x) hyz ih'
 ```
 
-The theorem is longer than the algorithm. That's normal — and that's the point. The compiler checks every step. The final `sort` is just plumbing:
+The theorem is longer than the algorithm. This is expected — and precisely the point. The compiler checks every step. The final `sort` is straightforward assembly:
 
 ```
 def List.sort (total : ∀ (a b : α), a ≤ b ∨ b ≤ a) (l : List α) : SortedList α :=
   ⟨l.insertionSort, List.insertionSort_sorted total l⟩
 ```
 
-It works. It's proven correct. But it's $`O(n^2)`.
+The implementation is proven correct. However, it is $`O(n^2)`.
 
 # Second attempt: merge sort ($`O(n \log n)`)
 
-The next prompt was: "make the sort method N log(N) fast." Same specification. Same type. Different algorithm.
+The next prompt to Claude was: "make the sort method N log(N) fast." Same specification. Same type. Different algorithm.
 
 Merge sort splits the list in two, recursively sorts both halves, and merges the results. The core merge function:
 
@@ -198,9 +198,9 @@ def List.sort (total : ∀ (a b : α), a ≤ b ∨ b ≤ a) (l : List α) : Sort
 
 Same spec. Better algorithm. The compiler is happy either way.
 
-# The feedback loop that actually works
+# The feedback loop
 
-This is the feedback loop I'm excited about:
+The workflow that emerges is:
 
 1. *Human writes the type* — the specification, the contract, the "what."
 2. *AI writes the implementation* — the algorithm, the proof obligations, the "how."
@@ -208,34 +208,34 @@ This is the feedback loop I'm excited about:
 
 If the proof doesn't go through, the code doesn't compile. The AI can try again, try a different approach, or ask for help. But it cannot ship broken code. The types won't let it.
 
-This is fundamentally different from the current vibe-coding workflow where correctness is checked by running the code and hoping for the best. Here, correctness is *structural*. It's baked into the types. You get it for free — or you don't get it at all.
+Harness-first vibe coding already moves in this direction — TLA+ specifications, deterministic simulation, model checking. Type-driven development takes the next step: the specification *is* the code. There is no gap between the invariant and the implementation, because the type system enforces them as one. The compiler doesn't check a sample of behaviors or a separate formal model; it verifies that the implementation *necessarily* satisfies the specification, for all inputs, by construction.
 
 # Why hasn't this taken off before?
 
 The idea of proving programs correct is as old as computer science itself. Hoare logic dates from 1969. The Curry-Howard correspondence was understood in the 1930s-60s. Coq has existed since 1989. So why isn't all software written this way?
 
-Because the proofs are *brutal* to write by hand.
+Because the proofs are extremely difficult to write by hand.
 
-Look at the insertion sort example above. The algorithm is 6 lines. The proof that it's correct is 25 lines of careful case analysis, threading ordering witnesses through every branch, managing hypotheses, and coaxing the type checker into accepting each step. For merge sort, it's worse — you need termination proofs, helper predicates, and lemmas about list splitting. A working programmer looks at that and reasonably concludes: "I'll just write a test."
+Consider the insertion sort example above. The algorithm is 6 lines. The proof that it is correct is 25 lines of careful case analysis, threading ordering witnesses through every branch, managing hypotheses, and guiding the type checker through each step. For merge sort, the situation is worse — it requires termination proofs, helper predicates, and lemmas about list splitting. A working programmer would reasonably conclude: "a test suite is sufficient."
 
-And they'd be right — in a world where humans write all the proofs. The cost-benefit ratio never made sense. Writing a specification is fast, but *constructing the proof* that an implementation satisfies it is slow, tedious, and requires deep expertise in both the domain and the proof assistant. For most software, tests and code review were "good enough," and formal verification was reserved for avionics, cryptography, and compilers — domains where bugs kill people or lose millions.
+And that conclusion would be correct — in a world where humans write all the proofs. The cost-benefit ratio did not justify the effort. Writing a specification is fast, but *constructing the proof* that an implementation satisfies it is slow, demanding, and requires deep expertise in both the domain and the proof assistant. For most software, tests and code review were adequate, and formal verification was reserved for avionics, cryptography, and compilers — domains where bugs cause fatalities or significant financial loss.
 
-But there is a deeper reason too. The experience of working with a proof assistant is *adversarial*. Every line of code triggers a proof obligation. Every step must be justified. The compiler rejects your attempt, shows you a cryptic goal state, and waits. You tweak, retry, get rejected again. For a human programmer, this constant, unforgiving feedback is exhausting and demoralizing. It feels less like programming and more like arguing with a very patient, very pedantic bureaucrat. No wonder most developers preferred the lenient world of unit tests and "it works on my machine."
+There is a deeper reason as well. The experience of working with a proof assistant is *adversarial*. Every line of code triggers a proof obligation. Every step must be justified. The compiler rejects the attempt, presents a goal state, and waits. The developer adjusts, retries, and is rejected again. For a human programmer, this constant, unforgiving feedback is exhausting. It resembles less programming than an argument with a very patient, very pedantic bureaucrat. Most developers understandably preferred the more forgiving world of unit tests.
 
 AI flips the economics entirely.
 
 # A golden age
 
-The proofs that took me an hour of back-and-forth to get right by hand? Claude generated them in seconds. Not perfectly on the first try — the merge sort proof required iteration, especially around termination arguments and well-founded recursion. But here is the crucial point: that adversarial feedback loop that *breaks* human programmers is exactly the environment where AI *thrives*.
+The proofs that took an hour of back-and-forth to construct by hand, Claude generated in seconds. Not perfectly on the first attempt — the merge sort proof required iteration, especially around termination arguments and well-founded recursion. But the crucial observation is this: the adversarial feedback loop that *exhausts* human programmers is exactly the environment where AI *excels*.
 
-AI doesn't get frustrated when the compiler rejects its proof for the fifteenth time. It doesn't lose motivation staring at an inscrutable goal state. It just reads the error, adjusts its approach, and tries again. The tight, unforgiving feedback from the type checker — the very thing that made formal verification impractical for humans — is precisely the kind of signal that makes AI effective. Where a human sees tedium, the AI sees a well-defined optimization problem: find the term that makes the type checker happy.
+An AI does not become frustrated when the compiler rejects its proof for the fifteenth time. It does not lose motivation confronting an opaque goal state. It reads the error, adjusts its approach, and tries again. The tight, unforgiving feedback from the type checker — the very property that made formal verification impractical for humans — is precisely the kind of signal that makes AI effective. Where a human sees tedium, the AI encounters a well-defined optimization problem: find the term that satisfies the type checker.
 
-Proof construction is mechanical, pattern-heavy, and requires persistence more than creativity. The human states what they want (the type). The AI grinds through the proof obligations. The compiler catches every mistake the AI makes and sends it back for another try. And unlike a human, the AI never decides "close enough, let's ship it."
+Proof construction is mechanical, pattern-heavy, and requires persistence more than creativity. The human states the intent (the type). The AI constructs the proof obligations. The compiler catches every mistake and returns it for another attempt. Unlike a human, the AI never concludes "close enough."
 
-This is a closed, formal feedback loop — fundamentally different from the "prompt, eyeball, ship" cycle of vibe coding. The compiler is an impartial, tireless, mathematically rigorous reviewer. It doesn't get tired. It doesn't miss edge cases. It doesn't rubber-stamp a PR because it's Friday afternoon.
+This is a closed, formal feedback loop — a natural evolution of the harness-first approach that the best vibe-coding practitioners already use. The difference is one of *integration*: in a harness-first workflow, the formal specification (TLA+, invariant checkers) and the implementation are separate artifacts maintained in parallel. In type-driven development, they are the same artifact. The type *is* the specification, the program *is* the proof, and the compiler is the verifier. There is no drift between spec and code, because they cannot diverge.
 
-Lean 4, in particular, is well-positioned for this moment. It's a modern language with good tooling, a fast compiler, and a type system powerful enough to express real-world specifications. The Curry-Howard correspondence is not just a theoretical curiosity — it's the engineering principle. Every type is a theorem. Every program is a proof. Every compilation is a verification.
+Lean 4, in particular, is well-positioned for this moment. It is a modern language with good tooling, a fast compiler, and a type system powerful enough to express real-world specifications. The Curry-Howard correspondence is not merely a theoretical curiosity — it is the engineering principle. Every type is a theorem. Every program is a proof. Every compilation is a verification.
 
-I think we'll look back at this moment and realize: vibe coding was the prototype. Type-driven development — where humans specify, AI implements, and the compiler verifies — is the production version.
+Harness-first vibe coding established the right pattern: humans specify, AI implements, automated systems verify. Type-driven development is the natural culmination of that pattern — one where specification, implementation, and verification are unified in the same language, with no gaps between them.
 
-The [full code](https://github.com/ngrislain/lean-lab/tree/main/type-driven-dev) is on GitHub.
+The [full code](https://gist.github.com/ngrislain/19eff850b02e4cca2af10fdf451e4580) is on GitHub.
