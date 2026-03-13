@@ -64,6 +64,57 @@ private def themeToggleScript : String :=
   })();
   "
 
+private def shareScript : String :=
+  "
+  document.addEventListener('DOMContentLoaded', function() {
+    var el = document.getElementById('share-buttons');
+    if (!el) return;
+    var rawUrl = window.location.href;
+    var url = encodeURIComponent(rawUrl);
+    var rawTitle = document.title.split(' | ')[0];
+    var title = encodeURIComponent(rawTitle);
+    var msg = encodeURIComponent(rawTitle + ' ' + rawUrl);
+    var icons = {
+      linkedin: 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z',
+      bluesky: 'M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.627 3.584 3.493 6.173 3.063-4.626.786-8.664 3.844-4.233 8.538C6.534 26.108 8.91 20.234 12 16.842c3.09 3.392 5.466 9.266 9.436 5.006 4.43-4.694.393-7.752-4.233-8.538 2.59.43 5.39-.436 6.174-3.063.245-.829.623-5.79.623-6.479 0-.688-.139-1.86-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8',
+      threads: 'M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.187.408-2.26 1.33-3.02.88-.724 2.083-1.12 3.476-1.145 1.027-.019 1.972.145 2.828.488-.046-.75-.222-1.346-.53-1.782-.395-.559-1.03-.843-1.882-.843h-.063c-.63.012-1.17.18-1.556.483l-1.35-1.612C8.57 6.313 9.58 5.97 10.77 5.932h.099c1.497 0 2.628.534 3.355 1.586.586.847.905 1.97.955 3.349.814.38 1.51.875 2.084 1.482 1.076 1.141 1.59 2.6 1.486 4.22-.113 1.742-.896 3.296-2.332 4.627C14.534 23.028 12.04 23.884 9.1 24h3.086zm-1.2-7.524c-.064 0-.128.002-.191.004-.96.037-1.732.282-2.233.71-.453.386-.65.854-.621 1.472.028.525.275.985.738 1.37.521.432 1.257.66 2.131.66.072 0 .146-.002.22-.006 1.07-.058 1.876-.462 2.464-1.233.452-.594.764-1.406.924-2.412-.83-.363-1.787-.55-2.853-.55-.192 0-.386.007-.579.022v-.037z',
+      x: 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z',
+      ycombinator: 'M0 24V0h24v24H0zM6.951 5.896l4.112 7.708v5.064h1.583v-4.972l4.148-7.799h-1.749l-2.457 4.875c-.372.745-.688 1.434-.688 1.434s-.297-.708-.651-1.434L8.831 5.896h-1.88z',
+      reddit: 'M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z',
+      lobsters: 'M16.496 15.616c.096-.32.16-.656.16-1.008V9.2c0-1.856-1.344-3.2-3.2-3.2H7.2C5.344 6 4 7.344 4 9.2v5.408c0 1.856 1.344 3.2 3.2 3.2h4.48l3.584 2.528v-3.776l1.232-.944zm-3.04-1.008c0 .64-.384 1.024-1.024 1.024H8.224c-.64 0-1.024-.384-1.024-1.024V9.2c0-.64.384-1.024 1.024-1.024h4.208c.64 0 1.024.384 1.024 1.024v5.408zM20 3.2v5.408c0 1.856-1.344 3.2-3.2 3.2h-.608V9.2c0-2.496-1.904-4.4-4.4-4.4H8.608c.32-1.024 1.248-1.6 2.192-1.6h5.408c1.856 0 3.792 1.344 3.792 3.2v-3.2z',
+      email: 'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'
+    };
+    var links = [
+      ['https://www.linkedin.com/sharing/share-offsite/?url=' + url, 'LinkedIn', 'linkedin'],
+      ['https://bsky.app/intent/compose?text=' + msg, 'Bluesky', 'bluesky'],
+      ['https://www.threads.net/intent/post?text=' + msg, 'Threads', 'threads'],
+      ['https://x.com/intent/tweet?url=' + url + '&text=' + title, 'X', 'x'],
+      ['https://news.ycombinator.com/submitlink?u=' + url + '&t=' + title, 'Hacker News', 'ycombinator'],
+      ['https://www.reddit.com/submit?url=' + url + '&title=' + title, 'Reddit', 'reddit'],
+      ['https://lobste.rs/stories/new?url=' + url + '&title=' + title, 'Lobsters', 'lobsters'],
+      ['mailto:?subject=' + title + '&body=' + msg, 'Email', 'email']
+    ];
+    links.forEach(function(l) {
+      var a = document.createElement('a');
+      a.href = l[0];
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.title = l[1];
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '18');
+      svg.setAttribute('class', 'share-icon');
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('fill', 'currentColor');
+      path.setAttribute('d', icons[l[2]]);
+      svg.appendChild(path);
+      a.appendChild(svg);
+      el.appendChild(a);
+    });
+  });
+  "
+
 private def highlightInitScript : String :=
   "
   document.querySelectorAll('pre').forEach(function(pre) {
@@ -93,8 +144,19 @@ private def navigation : Template := do
         </div>
         <ul class="nav-links">
           {{ ← Theme.dirLinks (← read).site }}
+          <li>
+            <a href="feed.xml" title="RSS Feed" class="rss-link">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="nav-icon">
+                <path fill="currentColor" d="M19.199 24C19.199 13.467 10.533 4.8 0 4.8V0c13.165 0 24 10.835 24 24h-4.801zM3.291 17.415a3.3 3.3 0 0 1 3.293 3.295A3.303 3.303 0 0 1 3.283 24C1.47 24 0 22.526 0 20.71a3.286 3.286 0 0 1 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727 0 15.909 7.184 15.909 15.91z"/>
+              </svg>
+            </a>
+          </li>
           <li class="logo-switches">
-            <button id="theme-toggle" title="Toggle dark mode">"☀️"</button>
+            <button id="theme-toggle" title="Toggle dark mode">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" class="nav-icon">
+                <path fill="currentColor" d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/>
+              </svg>
+            </button>
           </li>
         </ul>
       </nav>
@@ -135,6 +197,7 @@ private def primary : Template := do
         <script>{{themeToggleScript}}</script>
         {{← builtinHeader}}
         <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
+        <link rel="alternate" type="application/rss+xml" title={{siteTitle}} href="feed.xml"/>
         <link rel="stylesheet" href="static/chalk.css" type="text/css"/>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"/>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -181,10 +244,14 @@ private def post : Template := do
       <header class="post-header">
         <h1 class="post-title">{{← param "title"}}</h1>
         {{metadataHtml}}
+        <div class="share-section">
+          <div id="share-buttons" class="share-buttons"></div>
+        </div>
       </header>
       <div class="post-content">
         {{← param "content"}}
       </div>
+      <script>{{shareScript}}</script>
     </article>
   }}
 

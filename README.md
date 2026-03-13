@@ -12,6 +12,8 @@ lake exe ngrislain-github-io --output build
 
 The generated static site is written to the `build/` directory. Open `build/index.html` in a browser to preview the site locally.
 
+You can execute as a one-liner 🤓: `(lake update && lake exe ngrislain-github-io --output build && cd build && python -m http.server)`
+
 ## Deployment
 
 GitHub Actions build and publish the site automatically on pushes to `main`. The workflow is defined in `.github/workflows/deploy.yml` and performs the following steps:
