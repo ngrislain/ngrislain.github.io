@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blelloch Parallel Prefix Scan — Interactive</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f7f8fa; color: #222; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem; }
+  h1 { font-size: 1.35rem; margin-bottom: .15rem; }
+  .subtitle { color: #666; font-size: .88rem; margin-bottom: 1rem; }
+
+  .legend { display: flex; gap: 1.1rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: .8rem; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: .3rem; }
+  .legend-swatch { width: 18px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); }
+
+  .input-row { display: flex; gap: .4rem; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; }
+  .input-row label { font-weight: 600; font-size: .85rem; min-width: 45px; }
+  .input-row input[type=number] {
+    width: 48px; text-align: center; font-size: .95rem; padding: .25rem .15rem;
+    border: 2px solid #4dc9f6; border-radius: 4px; background: #eaf8fd; font-weight: 600;
+  }
+  .input-row input[type=number]:focus { outline: none; border-color: #0e8abf; background: #fff; }
+  /* Hide spin buttons */
+  .input-row input[type=number]::-webkit-inner-spin-button,
+  .input-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .input-row input[type=number] { -moz-appearance: textfield; }
+
+  .controls { display: flex; gap: .5rem; align-items: center; margin-bottom: .6rem; flex-wrap: wrap; }
+  .controls button {
+    padding: .4rem .9rem; font-size: .82rem; font-weight: 600; border: none;
+    border-radius: 4px; cursor: pointer; transition: background .12s;
+  }
+  .btn-step { background: #4dc9f6; color: #fff; }
+  .btn-step:hover { background: #1a9bd7; }
+  .btn-step:disabled { background: #b5e6f7; cursor: default; }
+  .btn-play { background: #77dd77; color: #fff; min-width: 90px; }
+  .btn-play:hover { background: #55bb55; }
+  .btn-play.playing { background: #f67280; }
+  .btn-play.playing:hover { background: #d45060; }
+  .btn-reset { background: #ddd; color: #444; }
+  .btn-reset:hover { background: #c0c0c0; }
+  .step-info { font-size: .82rem; color: #555; margin-left: .3rem; }
+
+  .phase-bar { display: flex; gap: .25rem; margin-bottom: 1rem; }
+  .phase-tag {
+    padding: .2rem .6rem; border-radius: 3px; font-size: .75rem; font-weight: 600;
+    background: #eee; color: #aaa; transition: all .15s;
+  }
+  .phase-tag.on { color: #fff; }
+  .phase-tag.on.t-input { background: #888; }
+  .phase-tag.on.t-up { background: #4dc9f6; }
+  .phase-tag.on.t-down { background: #6abb6a; }
+  .phase-tag.on.t-done { background: #888; }
+
+  svg { display: block; width: 100%; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Blelloch Parallel Prefix Scan</h1>
+  <p class="subtitle">Interactive exclusive prefix sum — inspired by
+    <a href="https://arxiv.org/abs/2506.10918" target="_blank">Yau et al. (2025)</a></p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#4dc9f6"></div> Active Token</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f67280"></div> Inactive Token</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#a8d88e"></div> Summary Token</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e8e8e8"></div> Identity (0)</div>
+  </div>
+
+  <div class="input-row">
+    <label>x =</label>
+    <input type="number" id="x0" value="3">
+    <input type="number" id="x1" value="1">
+    <input type="number" id="x2" value="4">
+    <input type="number" id="x3" value="1">
+    <input type="number" id="x4" value="5">
+    <input type="number" id="x5" value="9">
+    <input type="number" id="x6" value="2">
+    <input type="number" id="x7" value="6">
+  </div>
+
+  <div class="controls">
+    <button class="btn-step" id="btnStep">Step &rarr;</button>
+    <button class="btn-play" id="btnPlay">&#9654; Play</button>
+    <button class="btn-reset" id="btnReset">Reset</button>
+    <span class="step-info" id="stepInfo">Ready</span>
+  </div>
+
+  <div class="phase-bar">
+    <span class="phase-tag t-input" id="phInput">Input</span>
+    <span class="phase-tag t-up" id="phUp">Upsweep</span>
+    <span class="phase-tag t-down" id="phDown">Downsweep</span>
+    <span class="phase-tag t-done" id="phDone">Done</span>
+  </div>
+
+  <svg id="canvas"></svg>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   Blelloch exclusive prefix scan, then +x[i] → inclusive
+   ═══════════════════════════════════════════════════ */
+const N = 8, LOG = 3;
+
+/* Layout constants */
+const CW = 95;          /* column width */
+const RH = 56;          /* row height */
+const PL = 72;          /* left padding for labels */
+const PT = 32;          /* top padding */
+const PB = 24;          /* bottom padding */
+const NW = 48, NH = 26; /* node size */
+
+const C = {
+  active:   { f:'#ddf3fb', s:'#4dc9f6', t:'#0e6e8c' },
+  inactive: { f:'#fde8ea', s:'#f67280', t:'#a03848' },
+  summary:  { f:'#e4f2da', s:'#82c45e', t:'#3e6e20' },
+  identity: { f:'#efefef', s:'#bbb',    t:'#888' },
+  result:   { f:'#ddf3fb', s:'#4dc9f6', t:'#0e6e8c' },
+};
+
+/* ── State ── */
+let inp = [], stages = [], stepIdx = 0, playing = false, timer = null;
+
+/* ── Compute all stages ── */
+function compute(x) {
+  const n = x.length, log = LOG, st = [];
+  let a = x.slice();
+
+  /* 0: input */
+  st.push({ ph:'input', lv:0, v:a.slice(), c:a.map(()=>'active'),
+    ops:[] });
+
+  /* 1‥3: upsweep */
+  for (let d = 0; d < log; d++) {
+    const stride = 1 << (d+1), ops = [];
+    const types = a.map(()=>'active');
+    for (let i = stride-1; i < n; i += stride) {
+      const l = i - (stride>>1);
+      ops.push({ src:l, dst:i });
+      a[i] = a[l] + a[i];
+      types[l] = 'inactive';
+      types[i] = 'summary';
+    }
+    st.push({ ph:'upsweep', lv:d+1, v:a.slice(), c:types, ops });
+  }
+
+  /* 4: set root to 0 */
+  a[n-1] = 0;
+  st.push({ ph:'set-root', lv:0, v:a.slice(),
+    c: a.map((_,i) => i===n-1 ? 'identity' : 'active'),
+    ops:[{ dst:n-1, identity:true }] });
+
+  /* 5‥7: downsweep */
+  for (let d = log-1; d >= 0; d--) {
+    const stride = 1 << (d+1), ops = [];
+    const types = a.map(()=>'active');
+    for (let i = stride-1; i < n; i += stride) {
+      const l = i - (stride>>1);
+      const tmp = a[l];
+      a[l] = a[i];         /* left child ← parent */
+      a[i] = tmp + a[i];   /* right child ← old_left + parent */
+      ops.push({ src:i, dst:l, dst2:i, swap:true });
+      types[l] = 'summary';
+      types[i] = 'summary';
+    }
+    st.push({ ph:'downsweep', lv:d+1, v:a.slice(), c:types, ops });
+  }
+
+  return st;
+}
+
+/* ── SVG helpers ── */
+const svg = document.getElementById('canvas');
+function mk(tag, a) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(a)) e.setAttribute(k, v);
+  return e;
+}
+function nx(col) { return PL + col * CW + CW/2; }
+function ny(row) { return PT + row * RH + RH/2; }
+
+/* ── Draw ── */
+function draw() {
+  const vis = stepIdx + 1;
+  const svgW = PL + N*CW + 16;
+  const svgH = PT + vis*RH + PB;
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.innerHTML = '';
+
+  /* defs – arrowhead */
+  const defs = mk('defs',{});
+  const marker = mk('marker',{id:'ah',viewBox:'0 0 10 10',refX:'9',refY:'5',
+    markerWidth:'5',markerHeight:'5',orient:'auto-start-reverse'});
+  marker.appendChild(mk('path',{d:'M0 0L10 5L0 10z',fill:'#555'}));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  /* For each visible stage, draw wires then nodes */
+  for (let s = 0; s < vis; s++) {
+    const st = stages[s];
+    const y0 = ny(s) - NH/2;  /* top of node */
+    const y1 = ny(s) + NH/2;  /* bottom of node */
+
+    /* ── Wires from previous row ── */
+    if (s > 0) {
+      const py1 = ny(s-1) + NH/2; /* bottom of prev nodes */
+      const midY = (py1 + y0) / 2;
+
+      /* Dashed pass-through lines for columns with no operation */
+      const touched = new Set();
+      for (const op of st.ops) {
+        if (op.src !== undefined) touched.add(op.src);
+        if (op.dst !== undefined) touched.add(op.dst);
+        if (op.dst2 !== undefined) touched.add(op.dst2);
+      }
+      for (let c = 0; c < N; c++) {
+        if (!touched.has(c)) {
+          svg.appendChild(mk('line',{
+            x1:nx(c), y1:py1, x2:nx(c), y2:y0,
+            stroke:'#ddd','stroke-width':'1','stroke-dasharray':'3,3'
+          }));
+        }
+      }
+
+      /* Active wires */
+      for (const op of st.ops) {
+        if (op.identity) {
+          /* Arrow down to root with "e" label */
+          drawWireV(nx(op.dst), py1, y0, '#555', false);
+          const lt = mk('text',{x:nx(op.dst)+14, y:midY+3,
+            'font-size':'11','font-weight':'700',fill:'#888',
+            'text-anchor':'start','dominant-baseline':'central'});
+          lt.textContent = 'e';
+          svg.appendChild(lt);
+        } else if (op.swap) {
+          /* Downsweep: right→left (copy) and right→right (add old_left) */
+          const xr = nx(op.src), xl = nx(op.dst);
+          /* Right stays: vertical */
+          drawWireV(xr, py1, y0, '#555', false);
+          /* Right → Left: L-shaped */
+          drawWireL(xr, py1, xl, y0, midY, '#6abb6a', true);
+          /* Left stays → feeds into right sum (dashed, it's the "old left") */
+          drawWireL(xl, py1, xr, y0, midY - 6, '#aaa', false, true);
+          /* Plus circle on right destination */
+          drawPlus(xr, y0);
+        } else {
+          /* Upsweep: src → dst (L-shaped), dst stays (vertical) */
+          const xs = nx(op.src), xd = nx(op.dst);
+          drawWireV(xd, py1, y0, '#555', false);
+          drawWireL(xs, py1, xd, y0, midY, '#555', true);
+          drawPlus(xd, y0);
+        }
+      }
+    }
+
+    /* ── Nodes ── */
+    for (let c = 0; c < N; c++) {
+      const col = C[st.c[c]] || C.active;
+      const x = nx(c), y = ny(s);
+      const g = mk('g',{});
+      g.appendChild(mk('rect',{
+        x:x-NW/2, y:y-NH/2, width:NW, height:NH, rx:'4', ry:'4',
+        fill:col.f, stroke:col.s, 'stroke-width':'1.5'
+      }));
+      const t = mk('text',{x:x, y:y+1, fill:col.t,
+        'font-size':'12','font-weight':'700',
+        'text-anchor':'middle','dominant-baseline':'central'});
+      t.textContent = st.c[c]==='identity' ? '0' : st.v[c];
+      g.appendChild(t);
+      svg.appendChild(g);
+    }
+
+    /* ── Row label ── */
+    let label = '';
+    if (st.ph==='input') label = 'Input';
+    else if (st.ph==='upsweep') label = 'Up '+st.lv;
+    else if (st.ph==='set-root') label = 'Root→0';
+    else if (st.ph==='downsweep' && s===stages.length-1) label = 'Output';
+    else if (st.ph==='downsweep') label = 'Down '+st.lv;
+    const lb = mk('text',{x:PL-8, y:ny(s)+1,
+      'font-size':'11','font-weight':'700',fill:'#999',
+      'text-anchor':'end','dominant-baseline':'central'});
+    lb.textContent = label;
+    svg.appendChild(lb);
+  }
+}
+
+function drawWireV(x, y1, y2, color, dashed) {
+  const a = {x1:x,y1:y1,x2:x,y2:y2,stroke:color,'stroke-width':'1.5'};
+  if (dashed) a['stroke-dasharray'] = '4,3';
+  svg.appendChild(mk('line',a));
+}
+
+function drawWireL(x1, y1, x2, y2, midY, color, arrow, dashed) {
+  /* Vertical down from source, horizontal across, vertical down to dest */
+  let d = `M${x1},${y1} L${x1},${midY} L${x2},${midY} L${x2},${y2}`;
+  const a = {d:d, fill:'none', stroke:color, 'stroke-width':'1.5'};
+  if (arrow) a['marker-end'] = 'url(#ah)';
+  if (dashed) a['stroke-dasharray'] = '4,3';
+  svg.appendChild(mk('path',a));
+  /* Fork circle at source */
+  svg.appendChild(mk('circle',{cx:x1,cy:midY,r:'3',fill:'#fff',stroke:color,'stroke-width':'1.5'}));
+}
+
+function drawPlus(x, y) {
+  svg.appendChild(mk('circle',{cx:x,cy:y,r:'7',fill:'#fff',stroke:'#555','stroke-width':'1.5'}));
+  const t = mk('text',{x:x,y:y+1,'font-size':'11','font-weight':'800',fill:'#333',
+    'text-anchor':'middle','dominant-baseline':'central'});
+  t.textContent = '+';
+  svg.appendChild(t);
+}
+
+/* ── Controls ── */
+function readInp() {
+  inp = [];
+  for (let i=0;i<N;i++) inp.push(parseInt(document.getElementById('x'+i).value)||0);
+}
+
+function reset() {
+  stopPlay();
+  readInp();
+  stages = compute(inp);
+  stepIdx = 0;
+  refresh();
+}
+
+function step() {
+  if (stepIdx < stages.length-1) { stepIdx++; refresh(); }
+  else stopPlay();
+}
+
+function togglePlay() {
+  if (playing) { stopPlay(); return; }
+  playing = true;
+  btnPlay.classList.add('playing');
+  btnPlay.innerHTML = '&#9646;&#9646; Pause';
+  timer = setInterval(()=>{
+    if (stepIdx < stages.length-1) step(); else stopPlay();
+  }, 800);
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  btnPlay.classList.remove('playing');
+  btnPlay.innerHTML = '&#9654; Play';
+}
+
+function refresh() {
+  draw();
+  const st = stages[stepIdx];
+  document.getElementById('phInput').classList.toggle('on', st.ph==='input');
+  document.getElementById('phUp').classList.toggle('on', st.ph==='upsweep');
+  document.getElementById('phDown').classList.toggle('on', st.ph==='downsweep'||st.ph==='set-root');
+  const isDone = st.ph==='downsweep' && stepIdx===stages.length-1;
+  document.getElementById('phDone').classList.toggle('on', isDone);
+  const msgs = {
+    input:'Input values loaded',
+    upsweep:`Upsweep level ${st.lv} — pairwise reduction`,
+    'set-root':'Root replaced with identity (0)',
+    downsweep: isDone
+      ? 'Exclusive prefix sum complete'
+      : `Downsweep level ${st.lv} — distribute partial sums`,
+  };
+  document.getElementById('stepInfo').textContent =
+    `Step ${stepIdx}/${stages.length-1}: ${msgs[st.ph]}`;
+  document.getElementById('btnStep').disabled = stepIdx >= stages.length-1;
+}
+
+const btnStep = document.getElementById('btnStep');
+const btnPlay = document.getElementById('btnPlay');
+const btnReset= document.getElementById('btnReset');
+btnStep.addEventListener('click', step);
+btnPlay.addEventListener('click', togglePlay);
+btnReset.addEventListener('click', reset);
+for (let i=0;i<N;i++)
+  document.getElementById('x'+i).addEventListener('input', reset);
+
+reset();
+</script>
+</body>
+</html>

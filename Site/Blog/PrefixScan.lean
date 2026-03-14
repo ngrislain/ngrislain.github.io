@@ -19,7 +19,7 @@ The paper asks a clean question: *what is the full class of sequence models that
 
 # The answer: prefix scans
 
-The core observation is that all these models can be expressed as instances of the *Blelloch prefix scan* — a classical parallel algorithm that computes all prefixes of a sequence under a binary operator in $`O(n)` work and $`O(\log n)` depth. The algorithm works in two phases: an *upsweep* that reduces adjacent pairs bottom-up in a binary tree, and a *downsweep* that propagates prefix values top-down.
+The core observation is that all these models can be expressed as instances of the *Blelloch prefix scan* — a classical parallel algorithm that computes all prefixes of a sequence under a binary operator in $`O(n)` work and $`O(\log n)` depth. The algorithm works in two phases: an *upsweep* that reduces adjacent pairs bottom-up in a binary tree, and a *downsweep* that propagates prefix values top-down. You can step through it on a concrete example in this [interactive Blelloch scan visualization](static/blog/prefix-scan/blelloch.html).
 
 When the binary operator is *associative*, the parallel scan produces exactly the same result as a left-to-right sequential fold. This is the case for the entire family of modern "linear RNNs": Linear Attention, DeltaNet, RetNet, mLSTM, S4/S6, Mamba, GLA, and others. The paper shows that all of these fit a single *affine state recurrence* template:
 
