@@ -8,6 +8,7 @@ import Site.Projects.Adventure
 import Site.Projects.AIEconomics
 import Site.Projects.TypeDrivenDev
 import Site.Blog
+import Site.Embed
 import Site.Blog.PrefixScan
 
 open Verso Genre Blog Site Syntax
