@@ -10,6 +10,9 @@ authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 03, day := 13 }
 %%%
 
+:::hero "Blelloch Parallel Prefix Scan" "static/blog/prefix-scan/blelloch-screenshot.png"
+:::
+
 A reading note on [Sequential-Parallel Duality in Prefix Scannable Models](https://arxiv.org/abs/2506.10918) by Morris Yau, Sharut Gupta, Valerie Engelmayer, Kazuki Irie, Stefanie Jegelka, and Jacob Andreas (ICLR 2026).
 
 # The problem

@@ -12,3 +12,11 @@ block_component +directive iframe (src : String) where
         allowfullscreen="true">
       </iframe>
     }}
+
+block_component +directive hero (alt : String) (src : String) where
+  toHtml _id _json _goI _goB _contents := do
+    pure {{
+      <div class="hero-image">
+        <img src={{src}} alt={{alt}} />
+      </div>
+    }}

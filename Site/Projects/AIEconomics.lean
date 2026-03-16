@@ -1,4 +1,5 @@
 import VersoBlog
+import Site.Embed
 
 open Verso Genre Blog
 
@@ -8,6 +9,9 @@ open Verso Genre Blog
 authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 02, day := 20 }
 %%%
+
+:::hero "Immortality Frontier" "static/projects/ai-economics/immortality-frontier.png"
+:::
 
 It started over lunch with two economist friends. We were having one of those long conversations about AI and economics — what happens to labor income when machines get good enough, whether capital saves you or dooms you, the usual cheerful lunchtime topics. By dessert, we had talked ourselves into a challenge: write an interactive research paper about it, in the style of the AER, with Yannick's idea as the starting point.
 

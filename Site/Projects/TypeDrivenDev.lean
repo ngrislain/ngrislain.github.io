@@ -1,4 +1,5 @@
 import VersoBlog
+import Site.Embed
 
 open Verso Genre Blog
 
@@ -8,6 +9,9 @@ open Verso Genre Blog
 authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 03, day := 12 }
 %%%
+
+:::hero "Type-driven development with Lean 4" "static/projects/type-driven-dev/hero.png"
+:::
 
 ```leanInit ctx
 ```

@@ -1,4 +1,5 @@
 import VersoBlog
+import Site.Embed
 
 open Verso Genre Blog
 
@@ -8,6 +9,9 @@ open Verso Genre Blog
 authors := ["Nicolas Grislain"]
 date := { year := 2025, month := 11, day := 8 }
 %%%
+
+:::hero "Whiteboard design" "static/projects/adventure/design.jpeg"
+:::
 
 My kids are between five and eleven, so I usually keep their screen time short—unless they are building the experience themselves. What started as a throwaway line quickly became a pact, and they held me to it. We pulled out sketchbooks, drew some ideas, and soon we were designing a small 3D game together.
 

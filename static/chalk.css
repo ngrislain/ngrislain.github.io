@@ -346,6 +346,9 @@ blockquote {
 .post-content img[src*="shields.io"] {
     margin: 0;
     vertical-align: middle;
+    width: auto;
+    height: auto;
+    object-fit: none;
 }
 
 .post-content figure > figcaption {
@@ -682,6 +685,24 @@ pre {
 .hljs-params,
 .hljs-theorem {
     color: var(--code-text) !important;
+}
+
+/* ===== Hero images: hidden in posts, shown as thumbnails in listings ===== */
+.post-content .hero-image {
+    display: none;
+}
+
+.entry-content .hero-image {
+    margin: 0;
+}
+
+.entry-content .hero-image img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 4px;
+    margin: 0.5rem 0 0 0;
 }
 
 /* ===== KaTeX overrides ===== */

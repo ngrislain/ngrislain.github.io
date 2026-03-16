@@ -3,6 +3,7 @@ import Site.Front
 import Site.About
 import Site.Theme
 import Site.Feed
+import Site.OgMeta
 import Site.Projects
 import Site.Projects.Adventure
 import Site.Projects.AIEconomics
@@ -27,4 +28,5 @@ def personalSite : Site :=
 def main (args : List String) : IO UInt32 := do
   let rc ← blogMain Site.chalkTheme personalSite (options := args)
   Site.Feed.generate "build"
+  Site.OgMeta.inject "build"
   return rc
