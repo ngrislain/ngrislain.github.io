@@ -52,6 +52,11 @@
   .phase-tag.on.t-done { background: #888; }
 
   svg { display: block; width: 100%; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; }
+
+  .cta-hint {
+    text-align: center; padding: 1.2rem 1rem; color: #888; font-size: .88rem;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -94,6 +99,11 @@
   </div>
 
   <svg id="canvas"></svg>
+
+  <div class="cta-hint">
+    Click <strong>&ldquo;&#9654; Play&rdquo;</strong> to run the Blelloch parallel scan
+    or <strong>&ldquo;Step &rarr;&rdquo;</strong> to run it step by step.
+  </div>
 </div>
 
 <script>

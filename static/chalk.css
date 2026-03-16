@@ -647,8 +647,7 @@ pre {
 }
 
 .hljs-keyword,
-.hljs-selector-tag,
-.hljs-built_in {
+.hljs-selector-tag {
     color: #ff7b72 !important;
 }
 
@@ -676,6 +675,7 @@ pre {
 }
 
 .hljs-type,
+.hljs-built_in,
 .hljs-variable,
 .hljs-template-variable {
     color: #ffa657 !important;

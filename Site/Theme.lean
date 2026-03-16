@@ -125,6 +125,53 @@ private def highlightInitScript : String :=
   });
   "
 
+private def lean4GrammarScript : String :=
+  "
+  hljs.registerLanguage('lean', function(hljs) {
+    var LEAN_KW = 'def theorem lemma structure class instance inductive coinductive ' +
+      'axiom opaque abbrev noncomputable nonrec partial unsafe private protected ' +
+      'namespace section end open set_option attribute macro syntax elab ' +
+      'deriving extends universe variable scoped local ' +
+      'if then else match with do return for in let mut ' +
+      'have fun where by at ' +
+      'termination_by decreasing_by calc show suffices assume ' +
+      'case next try catch finally throw';
+    var LEAN_BI = 'Type Prop Sort Nat Int Bool String Float Unit IO ' +
+      'Option List Array Fin UInt8 UInt16 UInt32 UInt64 ' +
+      'Sorted SortedList LeHead ' +
+      'true false';
+    var TACTIC_KW = 'by intro intros exact apply refine cases induction simp rfl rw rewrite ' +
+      'unfold split constructor assumption contradiction exfalso congr ring omega ' +
+      'decide trivial norm_num linarith norm_cast push_cast field_simp ext funext ' +
+      'have let obtain rcases with at if then else match do return fun ' +
+      'show calc suffices case next rename_i subst aesop tauto ' +
+      'first repeat try all_goals any_goals focus specialize ' +
+      'clear generalize push_neg simp_all dsimp rfl sorry admit ' +
+      'guard_hyp change conv rw_mod_cast';
+    var LINE_COMMENT = { className: 'comment', begin: '--', end: '$' };
+    var BLOCK_COMMENT = { className: 'comment', begin: '/-', end: '-/', contains: ['self'] };
+    return {
+      name: 'Lean 4',
+      keywords: { keyword: LEAN_KW, built_in: LEAN_BI, literal: 'true false' },
+      contains: [
+        hljs.QUOTE_STRING_MODE,
+        hljs.C_NUMBER_MODE,
+        LINE_COMMENT,
+        BLOCK_COMMENT,
+        { className: 'meta', begin: '@\\\\[', end: '\\\\]' },
+        {
+          beginKeywords: 'def theorem lemma structure class instance inductive abbrev',
+          end: /[\\s:({\\[|$]/,
+          excludeEnd: true,
+          contains: [{ className: 'title', begin: /[A-Za-z_][\\w'.]*(?:\\.[A-Za-z_][\\w']*)*/ }]
+        },
+        { className: 'symbol', begin: /[\\u2190\\u2192\\u2194\\u2200\\u2203\\u2227\\u2228\\u00AC\\u2264\\u2265\\u2260\\u27E8\\u27E9\\u22A2\\u22A3\\u22A4\\u22A5\\u2208\\u2209\\u2282\\u2283\\u2286\\u2287\\u2229\\u222A\\u2218\\u00B7\\u00D7\\u25B8\\u25B9\\u03BB\\u03A3\\u03A0]/ },
+        { className: 'emphasis', begin: /\\bsorry\\b|\\badmit\\b/ }
+      ]
+    };
+  });
+  "
+
 private def themeToggleClickScript : String :=
   "
   document.getElementById('theme-toggle').addEventListener('click', function() {
@@ -206,7 +253,7 @@ private def primary : Template := do
         <link rel="stylesheet" href="static/chalk.css" type="text/css"/>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"/>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-        <script src="https://unpkg.com/highlightjs-lean@1.2.0/dist/lean.min.js"></script>
+        <script>{{lean4GrammarScript}}</script>
       </head>
       <body>
         {{← navigation}}
