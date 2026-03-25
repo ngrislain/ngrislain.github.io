@@ -17,7 +17,7 @@ date := { year := 2026, month := 03, day := 25 }
 
 # The problem
 
-The POSIX socket API is a state machine. A socket must be created, then bound, then set to listen, before it can accept connections. Calling operations in the wrong order — `send` on an unbound socket, `accept` before `listen`, `close` twice — is undefined behaviour in C.
+The POSIX socket API is a state machine. A socket must be created, then bound, then set to listen, before it can accept connections. Calling operations in the wrong order — `send` on an unconnected socket, `accept` before `listen`, `close` twice — returns an error code in C that nothing forces you to check.
 
 Every production socket library deals with this in one of three ways:
 
