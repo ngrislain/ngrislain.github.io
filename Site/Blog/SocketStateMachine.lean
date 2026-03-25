@@ -94,7 +94,7 @@ def close (s : Socket state)
 
 This is where dependent types shine brightest. The second parameter is a *proof* that the socket is not already closed. Let us trace what happens for each concrete state:
 
-:::pipeTable "Call | Proof obligation | by decide | Result\n---|---|---|---\nclose (s : Socket .fresh) | .fresh ≠ .closed | trivially true | compiles\nclose (s : Socket .bound) | .bound ≠ .closed | trivially true | compiles\nclose (s : Socket .listening) | .listening ≠ .closed | trivially true | compiles\nclose (s : Socket .connected) | .connected ≠ .closed | trivially true | compiles\nclose (s : Socket .closed) | .closed ≠ .closed | impossible | type error"
+:::pipeTable "Call | Proof obligation | `by decide` | Result\n---|---|---|---\n`close (s : Socket .fresh)` | `.fresh ≠ .closed` | trivially true | compiles\n`close (s : Socket .bound)` | `.bound ≠ .closed` | trivially true | compiles\n`close (s : Socket .listening)` | `.listening ≠ .closed` | trivially true | compiles\n`close (s : Socket .connected)` | `.connected ≠ .closed` | trivially true | compiles\n`close (s : Socket .closed)` | `.closed ≠ .closed` | impossible | type error"
 :::
 
 For the first four, the default tactic `by decide` discharges the proof automatically — the caller writes nothing. For the fifth, the proposition `.closed ≠ .closed` is *logically false*: no proof can exist, so the program is rejected at compile time.

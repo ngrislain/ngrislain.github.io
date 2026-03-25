@@ -21,9 +21,19 @@ block_component +directive hero (alt : String) (src : String) where
       </div>
     }}
 
+/-- Replace backtick-delimited spans with `<code>` tags. -/
+private def renderInlineCode (s : String) : String :=
+  let parts := s.splitOn "`"
+  let (result, _) := parts.foldl (fun (acc, inCode) part =>
+    if inCode then (acc ++ s!"<code>{part}</code>", false)
+    else (acc ++ part, true)
+  ) ("", false)
+  result
+
 /-- Render a pipe-delimited table from a raw string.
     First line is the header row, remaining lines are body rows.
-    Columns are separated by `|`. Leading/trailing `|` are stripped. -/
+    Columns are separated by `|`. Leading/trailing `|` are stripped.
+    Backtick-delimited spans within cells are rendered as `<code>`. -/
 private def parsePipeTable (src : String) : Html :=
   let lines := src.splitOn "\n" |>.map (·.trimAscii.toString) |>.filter (· != "")
   let stripEdge (line : String) : String :=
@@ -37,9 +47,9 @@ private def parsePipeTable (src : String) : Html :=
   match rows with
   | [] => .empty
   | hdr :: body =>
-    let th := String.join (hdr.map fun c => s!"<th>{c}</th>")
+    let th := String.join (hdr.map fun c => s!"<th>{renderInlineCode c}</th>")
     let trs := body.map fun row =>
-      let tds := String.join (row.map fun c => s!"<td>{c}</td>")
+      let tds := String.join (row.map fun c => s!"<td>{renderInlineCode c}</td>")
       s!"<tr>{tds}</tr>"
     let html := s!"<table><thead><tr>{th}</tr></thead><tbody>{String.join trs}</tbody></table>"
     .text false html
