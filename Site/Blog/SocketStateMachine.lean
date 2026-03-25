@@ -161,9 +161,19 @@ let _ ← close s
 
 Uncomment `bad_double_close` or `bad_send_fresh` and the kernel rejects the program immediately — the error messages tell you exactly which state transition is invalid.
 
+# What this does not capture
+
+This state machine models the _programmatic_ protocol — what operations you have called — not the _OS-level_ state of the socket. The real world is messier:
+
+- *Non-blocking `connect`* returns `EINPROGRESS` while the TCP handshake is in flight. The socket is neither `.fresh` nor `.connected` — it is _connecting_. A real non-blocking API would need a `.connecting` state and a resolution step (`pollConnect`).
+- *Peer disconnect* can happen at any time. A `Socket .connected` may be broken underneath; you only discover this when `send`/`recv` returns an error. The type guarantees the call is _legal to attempt_, not that it will _succeed_ — that is what `IO` encodes.
+- *Half-close* via `shutdown(SHUT_WR)` leaves a socket readable but not writable. The five-state model has no way to express this.
+
+In short, the type-level state machine is sound for *blocking sockets on the happy path*. For a production non-blocking server, richer states and an `IO`-based resolution protocol would be needed — a topic for a future post.
+
 # The punchline
 
-:::pipeTable "Approach | Lines of state-checking code | Runtime cost | Catches at\n---|---|---|---\nC (man page) | 0 | 0 | never (UB)\nPython (runtime) | ~50 | branch per call | runtime\nRust (typestate) | ~30 | 0 | compile-time\nLean 4 (dependent types) | 0 | 0 | compile-time"
+:::pipeTable "Approach | Lines of state-checking code | Runtime cost | Catches at\n---|---|---|---\nC (man page) | 0 | 0 | never (silent error)\nPython (runtime) | ~50 | branch per call | runtime\nRust (typestate) | ~30 | 0 | compile-time\nLean 4 (dependent types) | 0 | 0 | compile-time"
 :::
 
 Lean 4 is unique: the proof obligation `state ≠ .closed` is a _real logical proposition_ that the kernel verifies. It is not a lint, not a static analysis heuristic, not a convention. It is a mathematical proof of protocol compliance, checked by the same kernel that verifies Mathlib's theorems — and then thrown away so the generated code runs at the speed of C.

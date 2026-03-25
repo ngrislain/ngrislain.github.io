@@ -366,6 +366,7 @@ blockquote {
 /* ===== Code ===== */
 code {
     direction: ltr;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 .post-content code {
