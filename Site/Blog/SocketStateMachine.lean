@@ -10,6 +10,9 @@ authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 03, day := 25 }
 %%%
 
+:::hero "Socket state machine" "static/blog/socket-state-machine/hero.png"
+:::
+
 > _The best runtime check is the one that never runs._
 
 # The problem
