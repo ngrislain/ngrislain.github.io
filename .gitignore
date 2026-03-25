@@ -6,4 +6,4 @@ lake-packages/
 
 .DS_Store
 static/projects/.DS_Store
-*.png
+# *.png
