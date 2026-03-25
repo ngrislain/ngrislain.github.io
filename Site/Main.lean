@@ -11,6 +11,7 @@ import Site.Projects.TypeDrivenDev
 import Site.Blog
 import Site.Embed
 import Site.Blog.PrefixScan
+import Site.Blog.SocketStateMachine
 
 open Verso Genre Blog Site Syntax
 
@@ -19,6 +20,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
+      Site.Blog.SocketStateMachine
       Site.Blog.PrefixScan
     "projects" Site.Projects with
       Site.Projects.TypeDrivenDev
