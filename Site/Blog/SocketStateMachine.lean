@@ -180,4 +180,4 @@ Lean 4 is unique: the proof obligation `state ≠ .closed` is a _real logical pr
 
 ---
 
-_This post is part of the [Hale](https://github.com/typednotes/hale) documentation — a port of Haskell's web ecosystem to Lean 4 with maximalist typing._
+_This post is part of a series on [Hale](https://github.com/typednotes/hale) — a port of Haskell's web ecosystem to Lean 4 with maximalist typing._
