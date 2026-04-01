@@ -21,7 +21,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
-      -- Site.Blog.Mamba3
+      Site.Blog.Mamba3
       Site.Blog.SocketStateMachine
       Site.Blog.PrefixScan
     "projects" Site.Projects with
