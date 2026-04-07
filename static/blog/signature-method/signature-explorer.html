@@ -385,114 +385,109 @@ function startRecon() {
   const start = reconState.points[0].slice();
   const end = reconState.points[reconState.points.length - 1].slice();
 
-  // Initialize chain as a straight line from start to end with uniform spacing
-  // Add small random noise to break symmetry
-  const chain = new Array(CHAIN_N + 1);
+  // Fourier parameterization: path(t) = base(t) + sum_k coeff_k * basis_k(t)
+  // For open paths: base = lerp(start,end,t), basis = sin(k*pi*t) (zero at endpoints)
+  // For closed paths: base = start, basis = sin(2*pi*k*t) (periodic, zero at endpoints)
+  const K = 12;
+  const ax = new Float64Array(K), ay = new Float64Array(K);
+  const dist = Math.sqrt((end[0]-start[0])**2 + (end[1]-start[1])**2);
+  const closed = dist < 0.05;
+
+  // Precompute basis at chain sample points
+  const basis = new Array(CHAIN_N + 1);
   for (let i = 0; i <= CHAIN_N; i++) {
+    basis[i] = new Float64Array(K);
     const t = i / CHAIN_N;
-    chain[i] = [
-      start[0] * (1 - t) + end[0] * t + (i > 0 && i < CHAIN_N ? (Math.random() - 0.5) * 0.01 : 0),
-      start[1] * (1 - t) + end[1] * t + (i > 0 && i < CHAIN_N ? (Math.random() - 0.5) * 0.01 : 0)
-    ];
+    for (let k = 0; k < K; k++) {
+      basis[i][k] = closed
+        ? Math.sin(2 * Math.PI * (k + 1) * t)
+        : Math.sin((k + 1) * Math.PI * t);
+    }
   }
-  reconState.chain = chain;
+
+  // For closed paths, initialize first mode as a small circle to break zero gradient
+  if (closed) { ax[0] = 0.3; ay[0] = 0.0; ax[K > 1 ? 1 : 0] += 0.0; ay[K > 1 ? 1 : 0] = 0.3; }
+
+  function buildChain() {
+    const ch = new Array(CHAIN_N + 1);
+    for (let i = 0; i <= CHAIN_N; i++) {
+      const t = i / CHAIN_N;
+      let x = start[0] * (1 - t) + end[0] * t;
+      let y = start[1] * (1 - t) + end[1] * t;
+      for (let k = 0; k < K; k++) {
+        x += ax[k] * basis[i][k];
+        y += ay[k] * basis[i][k];
+      }
+      ch[i] = [x, y];
+    }
+    return ch;
+  }
+
+  reconState.chain = buildChain();
   reconState.running = true;
   document.getElementById('recon-btn').textContent = 'Stop';
   redrawTab2();
 
-  // Config
   let iter = 0;
-  const nSeg = CHAIN_N;
-  const lr0 = 0.3;
-  const lamLine = 0.1 / (N * N);   // pull toward straight line (strong at low levels)
-  const lamSmooth = 0.5;            // penalize curvature (prevents curls)
-  const fdh = 0.002;
-
-  // Straight-line reference
-  const lineRef = new Array(CHAIN_N + 1);
-  for (let i = 0; i <= CHAIN_N; i++) {
-    const t = i / CHAIN_N;
-    lineRef[i] = [start[0] * (1 - t) + end[0] * t, start[1] * (1 - t) + end[1] * t];
-  }
+  const lr0 = 0.01;
+  const lamL2 = 0.0005;
+  const fdh = 0.0005;
 
   function gradStep() {
     if (!reconState.running) return;
-    const ch = reconState.chain;
+    const ch = buildChain();
+    reconState.chain = ch;
 
-    // Build prefix and suffix signatures
-    const segExp = new Array(nSeg);
-    for (let i = 0; i < nSeg; i++)
-      segExp[i] = tExp([ch[i+1][0] - ch[i][0], ch[i+1][1] - ch[i][1]], N);
-
-    const prefix = new Array(nSeg + 1);
-    prefix[0] = idSig(N);
-    for (let i = 0; i < nSeg; i++)
-      prefix[i+1] = tProd(prefix[i], segExp[i], N);
-
-    const suffix = new Array(nSeg + 1);
-    suffix[nSeg] = idSig(N);
-    for (let i = nSeg - 1; i >= 0; i--)
-      suffix[i] = tProd(segExp[i], suffix[i+1], N);
-
-    const curSig = prefix[nSeg];
+    const curSig = sigOf(ch, N);
     const mse = sigMSE(target, curSig, N);
 
     if (isNaN(mse) || !isFinite(mse)) { stopRecon(); redrawTab2(); return; }
     if (iter > 3000) { stopRecon(); redrawTab2(); return; }
 
     iter++;
+    const lr = lr0 / (1 + iter * 0.0005);
 
-    // Compute gradients: signature MSE + line pull + curvature penalty
-    const lr = lr0 / (1 + iter * 0.001);
+    // Gradient w.r.t. each Fourier coefficient via finite differences
+    for (let k = 0; k < K; k++) {
+      ax[k] += fdh;
+      const spx = sigOf(buildChain(), N);
+      ax[k] -= 2 * fdh;
+      const smx = sigOf(buildChain(), N);
+      ax[k] += fdh;
 
-    for (let pi = 1; pi < nSeg; pi++) {
-      const px = ch[pi][0], py = ch[pi][1];
-      const prevX = ch[pi-1][0], prevY = ch[pi-1][1];
-      const nextX = ch[pi+1][0], nextY = ch[pi+1][1];
-
-      // Signature gradient via prefix-suffix finite differences
-      function evalP(dx, dy) {
-        const s1 = tExp([px + dx - prevX, py + dy - prevY], N);
-        const s2 = tExp([nextX - px - dx, nextY - py - dy], N);
-        return tProd(tProd(prefix[pi-1], tProd(s1, s2, N), N), suffix[pi+1], N);
-      }
-      const sPx = evalP(fdh, 0), sMx = evalP(-fdh, 0);
-      const sPy = evalP(0, fdh), sMy = evalP(0, -fdh);
+      ay[k] += fdh;
+      const spy = sigOf(buildChain(), N);
+      ay[k] -= 2 * fdh;
+      const smy = sigOf(buildChain(), N);
+      ay[k] += fdh;
 
       let gx = 0, gy = 0, cnt = 0;
-      for (let k = 1; k <= N; k++) {
-        for (let idx = 0; idx < curSig[k].length; idx++) {
-          const e = curSig[k][idx] - target[k][idx];
-          gx += e * (sPx[k][idx] - sMx[k][idx]);
-          gy += e * (sPy[k][idx] - sMy[k][idx]);
+      for (let lv = 1; lv <= N; lv++) {
+        for (let idx = 0; idx < curSig[lv].length; idx++) {
+          const e = curSig[lv][idx] - target[lv][idx];
+          gx += e * (spx[lv][idx] - smx[lv][idx]);
+          gy += e * (spy[lv][idx] - smy[lv][idx]);
           cnt++;
         }
       }
       gx /= (fdh * cnt);
       gy /= (fdh * cnt);
 
-      // Straight-line pull: d/dp_i of lamLine * |p_i - lineRef_i|^2
-      gx += lamLine * (px - lineRef[pi][0]);
-      gy += lamLine * (py - lineRef[pi][1]);
+      // Frequency-weighted L2 on coefficients (higher modes penalized more)
+      const w = lamL2 * (1 + k * k);
+      gx += w * ax[k];
+      gy += w * ay[k];
 
-      // Curvature penalty: d/dp_i of lamSmooth * sum |2p_i - p_{i-1} - p_{i+1}|^2
-      // = 2 * lamSmooth * (2*p_i - p_{i-1} - p_{i+1})
-      gx += lamSmooth * 2 * (2 * px - prevX - nextX);
-      gy += lamSmooth * 2 * (2 * py - prevY - nextY);
-
-      // Update
       const dx = lr * gx, dy = lr * gy;
-      if (isFinite(dx) && isFinite(dy)) {
-        ch[pi][0] = px - dx;
-        ch[pi][1] = py - dy;
-      }
+      if (isFinite(dx)) ax[k] -= dx;
+      if (isFinite(dy)) ay[k] -= dy;
     }
 
     // Redraw
     const c = document.getElementById('c2');
     const ctx = c.getContext('2d');
     drawGrid(ctx);
-    drawPath(ctx, ch, '#f67280', 1.5, false);
+    drawPath(ctx, reconState.chain, '#f67280', 1.5, false);
     drawPath(ctx, reconState.points, '#3b82f6', 2.5, true);
     const statusEl = document.getElementById('recon-status');
     if (statusEl) statusEl.textContent = 'Iter ' + iter + ' | MSE: ' + mse.toExponential(2);
