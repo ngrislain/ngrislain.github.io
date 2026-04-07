@@ -385,21 +385,21 @@ function startRecon() {
   const start = reconState.points[0].slice();
   const end = reconState.points[reconState.points.length - 1].slice();
 
-  // 128-node chain, straight line init, prefix-suffix gradient, weak L2 regularization
+  // 128-node chain, all points at origin, strong segment-length regularization
   const nSeg = CHAIN_N;
   const ch = new Array(CHAIN_N + 1);
-  for (let i = 0; i <= CHAIN_N; i++) {
-    const t = i / CHAIN_N;
-    ch[i] = [start[0] * (1 - t) + end[0] * t, start[1] * (1 - t) + end[1] * t];
-  }
+  for (let i = 0; i <= CHAIN_N; i++) ch[i] = [0, 0];
+  // Fix endpoints
+  ch[0] = start.slice();
+  ch[CHAIN_N] = end.slice();
   reconState.chain = ch;
   reconState.running = true;
   document.getElementById('recon-btn').textContent = 'Stop';
   redrawTab2();
 
   let iter = 0;
-  const lr0 = 0.15;
-  const lamL2 = 0.1;
+  const lr0 = 0.1;
+  const lamL2 = 1.0;
   const fdh = 0.002;
 
   function gradStep() {
@@ -455,7 +455,10 @@ function startRecon() {
       gx += lamL2 * 2 * (2 * px - prevX - nextX);
       gy += lamL2 * 2 * (2 * py - prevY - nextY);
 
-      const dx = lr * gx, dy = lr * gy;
+      let dx = lr * gx, dy = lr * gy;
+      // Clip step to prevent divergence on large-coordinate paths
+      const stepNorm = Math.sqrt(dx * dx + dy * dy);
+      if (stepNorm > 0.05) { dx *= 0.05 / stepNorm; dy *= 0.05 / stepNorm; }
       if (isFinite(dx) && isFinite(dy)) {
         ch[pi][0] = px - dx;
         ch[pi][1] = py - dy;
