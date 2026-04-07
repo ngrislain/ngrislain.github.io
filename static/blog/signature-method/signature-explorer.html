@@ -402,7 +402,7 @@ function startRecon() {
   redrawTab2();
 
   let iter = 0;
-  const lr0 = 0.03;
+  const lr0 = 0.05;
   const lamL2 = 10.0;
   const fdh = 0.002;
 
@@ -469,7 +469,7 @@ function startRecon() {
       }
     }
 
-    // Redraw
+    // Redraw canvas every step, update signature table every 20 steps
     const c = document.getElementById('c2');
     const ctx = c.getContext('2d');
     drawGrid(ctx);
@@ -477,6 +477,8 @@ function startRecon() {
     drawPath(ctx, reconState.points, '#3b82f6', 2.5, true);
     const statusEl = document.getElementById('recon-status');
     if (statusEl) statusEl.textContent = 'Iter ' + iter + ' | MSE: ' + mse.toExponential(2);
+
+    if (iter % 20 === 0) updateReconInfo();
 
     reconState.animId = requestAnimationFrame(gradStep);
   }
