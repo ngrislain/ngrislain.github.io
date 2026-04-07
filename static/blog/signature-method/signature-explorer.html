@@ -411,7 +411,8 @@ function startRecon() {
   const lr0 = 5.0;
   const lamL2 = 0.5;
   const fdh = 0.002;
-  const noiseScale = 0.3; // noise stderr as fraction of gradient norm
+  const noiseScale0 = 0.3; // initial noise stderr as fraction of gradient norm
+  const maxIter = 3000;
 
   function gradStep() {
     if (!reconState.running) return;
@@ -431,7 +432,7 @@ function startRecon() {
     const mse = sigMSE(target, curSig, N);
 
     if (isNaN(mse) || !isFinite(mse)) { stopRecon(); redrawTab2(); return; }
-    if (iter > 3000) { stopRecon(); redrawTab2(); return; }
+    if (iter > maxIter) { stopRecon(); redrawTab2(); return; }
 
     iter++;
     const lr = lr0 / (1 + iter * 0.001);
@@ -466,10 +467,11 @@ function startRecon() {
       gx += lamL2 * 2 * (2 * px - prevX - nextX);
       gy += lamL2 * 2 * (2 * py - prevY - nextY);
 
-      // Add noise proportional to gradient norm
+      // Add noise proportional to gradient norm, decaying linearly to zero
+      const noise = noiseScale0 * (1 - iter / maxIter);
       const gNorm = Math.sqrt(gx * gx + gy * gy);
-      gx += noiseScale * gNorm * randn();
-      gy += noiseScale * gNorm * randn();
+      gx += noise * gNorm * randn();
+      gy += noise * gNorm * randn();
 
       let dx = lr * gx, dy = lr * gy;
       const stepNorm = Math.sqrt(dx * dx + dy * dy);
