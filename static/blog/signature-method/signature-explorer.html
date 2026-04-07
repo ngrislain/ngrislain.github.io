@@ -121,6 +121,7 @@ label { font-size: .8rem; color: #4b5563; }
               <option value="7">7</option>
             </select>
           </label>
+          <span id="degree-info" style="font-size:.75rem;color:#6b7280;"></span>
           <button class="btn primary" id="recon-btn" onclick="startRecon();">Reconstruct</button>
         </div>
       </div>
@@ -204,6 +205,73 @@ function sigMSE(a, b, N) {
       err += d * d; cnt++;
     }
   return err / cnt;
+}
+
+// ===================== POLYNOMIAL DEGREE THEORY =====================
+function mobius(n) {
+  if (n === 1) return 1;
+  let tmp = n, nf = 0;
+  for (let p = 2; p * p <= tmp; p++) {
+    if (tmp % p === 0) { nf++; tmp /= p; if (tmp % p === 0) return 0; }
+  }
+  if (tmp > 1) nf++;
+  return nf % 2 === 0 ? 1 : -1;
+}
+
+function wittDim(d, k) {
+  // Dimension of free Lie algebra at grade k on d generators
+  let s = 0;
+  for (let m = 1; m <= k; m++) if (k % m === 0) s += mobius(k / m) * Math.pow(d, m);
+  return s / k;
+}
+
+function minPolyDegree(N) {
+  // Minimum polynomial degree to match level-N truncated signature (d=2, fixed endpoints)
+  if (N <= 1) return N;
+  let free = 0;
+  for (let k = 2; k <= N; k++) free += wittDim(2, k);
+  return Math.max(N, Math.ceil(free / 2) + 1);
+}
+
+// ===================== BÉZIER CURVES =====================
+function bezierPath(cx, cy, nPts) {
+  const n = cx.length - 1;
+  const pts = new Array(nPts + 1);
+  const bx = new Float64Array(n + 1), by = new Float64Array(n + 1);
+  for (let s = 0; s <= nPts; s++) {
+    const t = s / nPts;
+    for (let i = 0; i <= n; i++) { bx[i] = cx[i]; by[i] = cy[i]; }
+    for (let r = 1; r <= n; r++)
+      for (let i = 0; i <= n - r; i++) {
+        bx[i] = (1 - t) * bx[i] + t * bx[i + 1];
+        by[i] = (1 - t) * by[i] + t * by[i + 1];
+      }
+    pts[s] = [bx[0], by[0]];
+  }
+  return pts;
+}
+
+// ===================== CHOLESKY SOLVER =====================
+function solveCholesky(A, b, n) {
+  const L = [];
+  for (let i = 0; i < n; i++) L[i] = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = A[i][j];
+      for (let k = 0; k < j; k++) s -= L[i][k] * L[j][k];
+      if (i === j) { if (s <= 0) return null; L[i][j] = Math.sqrt(s); }
+      else L[i][j] = s / L[j][j];
+    }
+  }
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = b[i]; for (let k = 0; k < i; k++) s -= L[i][k] * y[k]; y[i] = s / L[i][i];
+  }
+  const x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = y[i]; for (let k = i + 1; k < n; k++) s -= L[k][i] * x[k]; x[i] = s / L[i][i];
+  }
+  return x;
 }
 
 function miStr(k, idx) {
@@ -331,7 +399,6 @@ document.getElementById('c1').addEventListener('click', function(e) {
 
 // ===================== TAB 2: RECONSTRUCTION =====================
 const reconState = { points: [], chain: null, running: false, animId: null };
-const CHAIN_N = 128;
 
 function redrawTab2() {
   const c = document.getElementById('c2');
@@ -344,11 +411,19 @@ function redrawTab2() {
 
 function updateReconInfo() {
   const el = document.getElementById('sig-display-2');
+  const N = parseInt(document.getElementById('recon-level').value);
+  const deg = minPolyDegree(N);
+  const nP = 2 * Math.max(0, deg - 1);
+  const di = document.getElementById('degree-info');
+  if (di) di.textContent = ' \u2192 degree ' + deg + ' (' + nP + ' params)';
+
   if (reconState.points.length < 2) {
-    el.innerHTML = '<p style="color:#9ca3af;font-size:.8rem;">Draw a path, then click Reconstruct. A 128-node chain starts as a straight line and is optimized by gradient descent to match the truncated signature, with a weak L2 pull toward the origin.</p>';
+    el.innerHTML = '<p style="color:#9ca3af;font-size:.8rem;">Draw a path, then click Reconstruct.<br><br>'
+      + 'Finds a degree-' + deg + ' B\u00e9zier curve whose truncated signature matches the target at level ' + N + '. '
+      + 'The polynomial degree is the minimum from the Witt formula for the free Lie algebra. '
+      + 'Several random initialisations are tried and the smoothest solution (smallest sup-norm) is kept.</p>';
     return;
   }
-  const N = parseInt(document.getElementById('recon-level').value);
   const origSig = sigOf(reconState.points, N);
   if (!reconState.chain) {
     renderSig('sig-display-2', origSig);
@@ -357,7 +432,7 @@ function updateReconInfo() {
   const reconSig = sigOf(reconState.chain, N);
   const mse = sigMSE(origSig, reconSig, N);
 
-  let h = '<div class="sig-header">Signature comparison (level ' + N + ')</div>';
+  let h = '<div class="sig-header">Degree ' + deg + ' B\u00e9zier vs. target (level ' + N + ')</div>';
   h += '<table class="match-table"><tr><th></th><th>Original</th><th>Recon.</th><th></th></tr>';
   for (let k = 0; k <= N; k++) {
     for (let idx = 0; idx < origSig[k].length; idx++) {
@@ -382,121 +457,164 @@ function stopRecon() {
   document.getElementById('recon-btn').textContent = 'Reconstruct';
 }
 
+function lmSolve(params, nP, nRes, getRes, maxIter, fdh) {
+  let lambda = 1e-3;
+  for (let iter = 0; iter < maxIter; iter++) {
+    const [r0] = getRes(params);
+    let cost0 = 0;
+    for (let i = 0; i < nRes; i++) cost0 += r0[i] * r0[i];
+    if (isNaN(cost0) || !isFinite(cost0) || cost0 < 1e-20) return cost0;
+
+    const J = [];
+    for (let i = 0; i < nRes; i++) J[i] = new Float64Array(nP);
+    for (let p = 0; p < nP; p++) {
+      const old = params[p];
+      params[p] = old + fdh;
+      const [rP] = getRes(params);
+      params[p] = old;
+      for (let i = 0; i < nRes; i++) J[i][p] = (rP[i] - r0[i]) / fdh;
+    }
+
+    const JTJ = [];
+    for (let i = 0; i < nP; i++) JTJ[i] = new Float64Array(nP);
+    const JTr = new Float64Array(nP);
+    for (let i = 0; i < nP; i++) {
+      for (let j = i; j < nP; j++) {
+        let s = 0;
+        for (let k = 0; k < nRes; k++) s += J[k][i] * J[k][j];
+        JTJ[i][j] = s; JTJ[j][i] = s;
+      }
+      JTJ[i][i] += lambda;
+      let s = 0;
+      for (let k = 0; k < nRes; k++) s += J[k][i] * r0[k];
+      JTr[i] = s;
+    }
+
+    const delta = solveCholesky(JTJ, JTr.map(v => -v), nP);
+    if (!delta) { lambda *= 10; continue; }
+
+    const saved = new Float64Array(params);
+    for (let p = 0; p < nP; p++) params[p] += delta[p];
+    const [r1] = getRes(params);
+    let cost1 = 0;
+    for (let i = 0; i < nRes; i++) cost1 += r1[i] * r1[i];
+
+    if (cost1 < cost0) { lambda = Math.max(lambda * 0.3, 1e-10); }
+    else { for (let p = 0; p < nP; p++) params[p] = saved[p]; lambda = Math.min(lambda * 3, 1e8); }
+  }
+  const [rF] = getRes(params);
+  let c = 0; for (let i = 0; i < nRes; i++) c += rF[i] * rF[i];
+  return c;
+}
+
 function startRecon() {
   if (reconState.points.length < 2) return;
   if (reconState.running) { stopRecon(); return; }
 
   const N = parseInt(document.getElementById('recon-level').value);
   const target = sigOf(reconState.points, N);
-  const start = reconState.points[0].slice();
-  const end = reconState.points[reconState.points.length - 1].slice();
+  const start = reconState.points[0];
+  const end   = reconState.points[reconState.points.length - 1];
+  const deg   = minPolyDegree(N);
+  const nFree = deg - 1;
+  const nP    = 2 * nFree;
+  const nSample = 64;
 
-  // 128-node chain, Gaussian random init, strong segment-length regularization
-  const nSeg = CHAIN_N;
-  const ch = new Array(CHAIN_N + 1);
-  // Box-Muller for Gaussian random
+  let nRes = 0;
+  for (let k = 1; k <= N; k++) nRes += (1 << k);
+
+  if (nP === 0) {
+    reconState.chain = [start.slice(), end.slice()];
+    redrawTab2();
+    return;
+  }
+
   function randn() {
     const u1 = Math.random(), u2 = Math.random();
     return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   }
-  for (let i = 0; i <= CHAIN_N; i++) ch[i] = [0.3 * randn(), 0.3 * randn()];
-  ch[0] = start.slice();
-  ch[CHAIN_N] = end.slice();
-  reconState.chain = ch;
-  reconState.running = true;
-  document.getElementById('recon-btn').textContent = 'Stop';
-  redrawTab2();
 
-  let iter = 0;
-  const lr0 = 0.5;
-  const lamL2 = 0.5;
-  const fdh = 0.002;
-  const noiseScale0 = 0.3; // initial noise stderr as fraction of gradient norm
-  const maxIter = 3000;
-
-  function gradStep() {
-    if (!reconState.running) return;
-
-    // Build prefix and suffix
-    const segExp = new Array(nSeg);
-    for (let i = 0; i < nSeg; i++)
-      segExp[i] = tExp([ch[i+1][0] - ch[i][0], ch[i+1][1] - ch[i][1]], N);
-    const prefix = new Array(nSeg + 1);
-    prefix[0] = idSig(N);
-    for (let i = 0; i < nSeg; i++) prefix[i+1] = tProd(prefix[i], segExp[i], N);
-    const suffix = new Array(nSeg + 1);
-    suffix[nSeg] = idSig(N);
-    for (let i = nSeg - 1; i >= 0; i--) suffix[i] = tProd(segExp[i], suffix[i+1], N);
-
-    const curSig = prefix[nSeg];
-    const mse = sigMSE(target, curSig, N);
-
-    if (isNaN(mse) || !isFinite(mse)) { stopRecon(); redrawTab2(); return; }
-    if (iter > maxIter) { stopRecon(); redrawTab2(); return; }
-
-    iter++;
-    const lr = lr0 / (1 + iter * 0.001);
-
-    // Gradient for each interior point via prefix-suffix finite differences + L2
-    for (let pi = 1; pi < nSeg; pi++) {
-      const px = ch[pi][0], py = ch[pi][1];
-      const prevX = ch[pi-1][0], prevY = ch[pi-1][1];
-      const nextX = ch[pi+1][0], nextY = ch[pi+1][1];
-
-      function evalP(dx, dy) {
-        const s1 = tExp([px + dx - prevX, py + dy - prevY], N);
-        const s2 = tExp([nextX - px - dx, nextY - py - dy], N);
-        return tProd(tProd(prefix[pi-1], tProd(s1, s2, N), N), suffix[pi+1], N);
-      }
-      const sPx = evalP(fdh, 0), sMx = evalP(-fdh, 0);
-      const sPy = evalP(0, fdh), sMy = evalP(0, -fdh);
-
-      let gx = 0, gy = 0, cnt = 0;
-      for (let k = 1; k <= N; k++) {
-        for (let idx = 0; idx < curSig[k].length; idx++) {
-          const e = curSig[k][idx] - target[k][idx];
-          gx += e * (sPx[k][idx] - sMx[k][idx]);
-          gy += e * (sPy[k][idx] - sMy[k][idx]);
-          cnt++;
-        }
-      }
-      gx /= (fdh * cnt);
-      gy /= (fdh * cnt);
-
-      // Penalize squared segment lengths: d/dp_i of lamL2 * sum |seg|^2
-      gx += lamL2 * 2 * (2 * px - prevX - nextX);
-      gy += lamL2 * 2 * (2 * py - prevY - nextY);
-
-      // Add noise proportional to gradient norm, decaying linearly to zero
-      const noise = noiseScale0 * (1 - iter / maxIter);
-      const gNorm = Math.sqrt(gx * gx + gy * gy);
-      gx += noise * gNorm * randn();
-      gy += noise * gNorm * randn();
-
-      let dx = lr * gx, dy = lr * gy;
-      const stepNorm = Math.sqrt(dx * dx + dy * dy);
-      if (stepNorm > 0.02) { dx *= 0.02 / stepNorm; dy *= 0.02 / stepNorm; }
-      if (isFinite(dx) && isFinite(dy)) {
-        ch[pi][0] = px - dx;
-        ch[pi][1] = py - dy;
-      }
-    }
-
-    // Redraw canvas every step, update signature table every 20 steps
-    const c = document.getElementById('c2');
-    const ctx = c.getContext('2d');
-    drawGrid(ctx);
-    drawPath(ctx, ch, '#f67280', 1.5, false);
-    drawPath(ctx, reconState.points, '#3b82f6', 2.5, true);
-    const statusEl = document.getElementById('recon-status');
-    if (statusEl) statusEl.textContent = 'Iter ' + iter + ' | MSE: ' + mse.toExponential(2);
-
-    if (iter % 20 === 0) updateReconInfo();
-
-    reconState.animId = requestAnimationFrame(gradStep);
+  function buildCtrl(p) {
+    const cx = [start[0]], cy = [start[1]];
+    for (let i = 0; i < nFree; i++) { cx.push(p[2 * i]); cy.push(p[2 * i + 1]); }
+    cx.push(end[0]); cy.push(end[1]);
+    return [cx, cy];
   }
 
-  reconState.animId = requestAnimationFrame(gradStep);
+  function getRes(p) {
+    const [cx, cy] = buildCtrl(p);
+    const path = bezierPath(cx, cy, nSample);
+    const sig  = sigOf(path, N);
+    const r = new Float64Array(nRes);
+    let idx = 0;
+    for (let k = 1; k <= N; k++)
+      for (let j = 0; j < sig[k].length; j++)
+        r[idx++] = sig[k][j] - target[k][j];
+    return [r, path];
+  }
+
+  const nTrials = 8;
+  const maxIter = 200, fdh = 1e-4;
+  let bestParams = null, bestSup = Infinity;
+  let trial = 0;
+
+  reconState.running = true;
+  const btn = document.getElementById('recon-btn');
+  const spinId = setInterval(() => {
+    btn.textContent = '\u21BB ' + trial + '/' + nTrials;
+  }, 120);
+
+  function runTrial() {
+    if (!reconState.running) { clearInterval(spinId); btn.textContent = 'Reconstruct'; return; }
+
+    if (trial < nTrials) {
+      const p = new Float64Array(nP);
+      const noise0 = 0.5 / Math.sqrt(nFree);
+      for (let i = 0; i < nFree; i++) {
+        const t = (i + 1) / (nFree + 1);
+        p[2 * i]     = start[0] + t * (end[0] - start[0]) + noise0 * randn();
+        p[2 * i + 1] = start[1] + t * (end[1] - start[1]) + noise0 * randn();
+      }
+
+      const cost = lmSolve(p, nP, nRes, getRes, maxIter, fdh);
+      if (cost <= 1e-6) {
+        let sup = 0;
+        for (let i = 0; i < nFree; i++) {
+          const t = (i + 1) / (nFree + 1);
+          const lx = start[0] + t * (end[0] - start[0]);
+          const ly = start[1] + t * (end[1] - start[1]);
+          sup = Math.max(sup, Math.abs(p[2 * i] - lx), Math.abs(p[2 * i + 1] - ly));
+        }
+        if (sup < bestSup) { bestSup = sup; bestParams = new Float64Array(p); }
+      }
+
+      trial++;
+      setTimeout(runTrial, 0);
+      return;
+    }
+
+    // All trials done
+    clearInterval(spinId);
+
+    if (!bestParams) {
+      bestParams = new Float64Array(nP);
+      const noise0 = 0.5 / Math.sqrt(nFree);
+      for (let i = 0; i < nFree; i++) {
+        const t = (i + 1) / (nFree + 1);
+        bestParams[2 * i]     = start[0] + t * (end[0] - start[0]) + noise0 * randn();
+        bestParams[2 * i + 1] = start[1] + t * (end[1] - start[1]) + noise0 * randn();
+      }
+      lmSolve(bestParams, nP, nRes, getRes, maxIter, fdh);
+    }
+
+    const [, bestPath] = getRes(bestParams);
+    reconState.chain = bestPath;
+    reconState.running = false;
+    btn.textContent = 'Reconstruct';
+    redrawTab2();
+  }
+
+  setTimeout(runTrial, 0);
 }
 
 document.getElementById('c2').addEventListener('click', function(e) {
