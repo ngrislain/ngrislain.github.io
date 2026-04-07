@@ -451,9 +451,9 @@ function startRecon() {
       gx /= (fdh * cnt);
       gy /= (fdh * cnt);
 
-      // L2 pull toward origin
-      gx += lamL2 * px;
-      gy += lamL2 * py;
+      // Penalize squared segment lengths: d/dp_i of lamL2 * sum |seg|^2
+      gx += lamL2 * 2 * (2 * px - prevX - nextX);
+      gy += lamL2 * 2 * (2 * py - prevY - nextY);
 
       const dx = lr * gx, dy = lr * gy;
       if (isFinite(dx) && isFinite(dy)) {
