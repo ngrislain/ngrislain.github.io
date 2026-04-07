@@ -408,7 +408,7 @@ function startRecon() {
   redrawTab2();
 
   let iter = 0;
-  const lr0 = 5.0;
+  const lr0 = 0.5;
   const lamL2 = 0.5;
   const fdh = 0.002;
   const noiseScale0 = 0.3; // initial noise stderr as fraction of gradient norm
@@ -475,7 +475,7 @@ function startRecon() {
 
       let dx = lr * gx, dy = lr * gy;
       const stepNorm = Math.sqrt(dx * dx + dy * dy);
-      if (stepNorm > 0.05) { dx *= 0.05 / stepNorm; dy *= 0.05 / stepNorm; }
+      if (stepNorm > 0.02) { dx *= 0.02 / stepNorm; dy *= 0.02 / stepNorm; }
       if (isFinite(dx) && isFinite(dy)) {
         ch[pi][0] = px - dx;
         ch[pi][1] = py - dy;
