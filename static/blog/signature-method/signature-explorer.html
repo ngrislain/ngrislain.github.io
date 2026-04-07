@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path Signature Explorer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+  onload="renderAllMath()"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f7f8fa; color: #23272f;
+  line-height: 1.5; padding: 1rem;
+}
+.container { max-width: 960px; margin: 0 auto; }
+h1 { font-size: 1.3rem; margin-bottom: .2rem; }
+.subtitle { color: #6b7280; font-size: .85rem; margin-bottom: .8rem; }
+.tabs { display: flex; gap: 2px; margin-bottom: .8rem; }
+.tab-btn {
+  padding: .45rem .9rem; border: none; background: #e5e7eb; color: #374151;
+  cursor: pointer; font-size: .82rem; border-radius: 6px 6px 0 0; transition: background .15s;
+}
+.tab-btn.active { background: #fff; color: #2563eb; font-weight: 600; }
+.tab-btn:hover:not(.active) { background: #d1d5db; }
+.tab-content { display: none; background: #fff; border-radius: 0 6px 6px 6px;
+  padding: .8rem; border: 1px solid #e5e7eb; }
+.tab-content.active { display: block; }
+.panel { display: flex; gap: .8rem; flex-wrap: wrap; }
+.canvas-col { flex: 1 1 340px; min-width: 300px; }
+.info-col { flex: 1 1 280px; min-width: 250px; max-height: 480px; overflow-y: auto; }
+.canvas-wrap {
+  position: relative; background: #fff;
+  border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;
+}
+.canvas-wrap canvas { display: block; cursor: crosshair; width: 100%; height: auto; }
+.btn-row { display: flex; gap: .4rem; margin-top: .4rem; flex-wrap: wrap; align-items: center; }
+.btn {
+  padding: .3rem .7rem; border: 1px solid #d1d5db; background: #fff;
+  border-radius: 4px; font-size: .78rem; cursor: pointer; color: #374151;
+}
+.btn:hover { background: #f3f4f6; }
+.btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn.primary:hover { background: #1d4ed8; }
+.sig-header { font-weight: 600; font-size: .85rem; margin-bottom: .3rem; }
+.sig-level { margin-bottom: .5rem; }
+.sig-level-title { font-size: .75rem; color: #6b7280; font-weight: 600; margin-bottom: .15rem; }
+.sig-term { display: flex; align-items: center; gap: .4rem; font-size: .78rem; margin-bottom: .15rem; }
+.sig-label { min-width: 50px; text-align: right; font-family: 'KaTeX_Main', serif; }
+.sig-bar-wrap { flex: 1; height: 14px; background: #f3f4f6; border-radius: 3px; position: relative; overflow: hidden; }
+.sig-bar { height: 100%; border-radius: 3px; transition: width .2s; position: absolute; }
+.sig-bar.pos { background: #3b82f6; left: 50%; }
+.sig-bar.neg { background: #ef4444; right: 50%; }
+.sig-val { min-width: 55px; font-size: .72rem; color: #6b7280; font-variant-numeric: tabular-nums; }
+select { font-size: .8rem; }
+label { font-size: .8rem; color: #4b5563; }
+.match-table { font-size: .78rem; width: 100%; border-collapse: collapse; margin-top: .4rem; }
+.match-table td, .match-table th { padding: .2rem .4rem; border-bottom: 1px solid #f3f4f6; text-align: right; }
+.match-table th { text-align: center; }
+.match-table td:first-child { text-align: left; }
+.match-table .ok { color: #16a34a; }
+.match-table .diff { color: #dc2626; }
+.status-bar {
+  font-size: .75rem; color: #6b7280; margin-top: .4rem; padding: .3rem .5rem;
+  background: #f9fafb; border-radius: 4px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Path Signature Explorer</h1>
+  <p class="subtitle">Draw 2D paths and explore their truncated signatures</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('draw')">Draw &amp; Compute</button>
+    <button class="tab-btn" onclick="switchTab('recon')">Reconstruction</button>
+  </div>
+
+  <!-- Tab 1: Draw & Compute -->
+  <div id="tab-draw" class="tab-content active">
+    <div class="panel">
+      <div class="canvas-col">
+        <div class="canvas-wrap"><canvas id="c1" width="400" height="400"></canvas></div>
+        <div class="btn-row">
+          <button class="btn" onclick="undo(drawState); redrawTab1();">Undo</button>
+          <button class="btn" onclick="drawState.points=[]; redrawTab1();">Clear</button>
+          <label>Truncation level:
+            <select id="level1" onchange="redrawTab1();">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="info-col" id="sig-display-1"></div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Reconstruction -->
+  <div id="tab-recon" class="tab-content">
+    <div class="panel">
+      <div class="canvas-col">
+        <div class="canvas-wrap"><canvas id="c2" width="400" height="400"></canvas></div>
+        <div class="btn-row">
+          <button class="btn" onclick="undo(reconState); stopRecon(); reconState.chain=null; redrawTab2();">Undo</button>
+          <button class="btn" onclick="stopRecon(); reconState.points=[]; reconState.chain=null; redrawTab2();">Clear</button>
+          <label>Level:
+            <select id="recon-level" onchange="stopRecon(); reconState.chain=null; redrawTab2();">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </label>
+          <button class="btn primary" id="recon-btn" onclick="startRecon();">Reconstruct</button>
+        </div>
+      </div>
+      <div class="info-col" id="sig-display-2"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== COORDINATE SYSTEM =====================
+const W = 400, H = 400;
+const WORLD_MIN = -2, WORLD_MAX = 2, WORLD_RANGE = 4;
+
+function w2c(wx, wy) {
+  return [(wx - WORLD_MIN) / WORLD_RANGE * W, (WORLD_MAX - wy) / WORLD_RANGE * H];
+}
+function c2w(cx, cy) {
+  return [WORLD_MIN + cx / W * WORLD_RANGE, WORLD_MAX - cy / H * WORLD_RANGE];
+}
+function getWorld(canvas, e) {
+  const r = canvas.getBoundingClientRect();
+  return c2w((e.clientX - r.left) * (canvas.width / r.width),
+             (e.clientY - r.top) * (canvas.height / r.height));
+}
+
+// ===================== SIGNATURE ENGINE =====================
+const FACT = [1,1,2,6,24,120,720];
+
+function idSig(N) {
+  const s = [new Float64Array([1])];
+  for (let k = 1; k <= N; k++) s[k] = new Float64Array(1 << k);
+  return s;
+}
+
+function tExp(d, N) {
+  const s = [new Float64Array([1])];
+  for (let k = 1; k <= N; k++) {
+    const sz = 1 << k;
+    s[k] = new Float64Array(sz);
+    for (let idx = 0; idx < sz; idx++) {
+      let p = 1, t = idx;
+      for (let j = 0; j < k; j++) { p *= d[t & 1]; t >>= 1; }
+      s[k][idx] = p / FACT[k];
+    }
+  }
+  return s;
+}
+
+function tProd(A, B, N) {
+  const C = [];
+  for (let k = 0; k <= N; k++) {
+    const sz = k === 0 ? 1 : (1 << k);
+    C[k] = new Float64Array(sz);
+    for (let idx = 0; idx < sz; idx++) {
+      let sum = 0;
+      for (let m = 0; m <= k; m++) {
+        const r = k - m;
+        const ai = m === 0 ? 0 : (r === 0 ? idx : idx >> r);
+        const bi = r === 0 ? 0 : (m === 0 ? idx : idx & ((1 << r) - 1));
+        sum += A[m][ai] * B[r][bi];
+      }
+      C[k][idx] = sum;
+    }
+  }
+  return C;
+}
+
+function sigOf(pts, N) {
+  if (pts.length < 2) return idSig(N);
+  let s = idSig(N);
+  for (let i = 1; i < pts.length; i++)
+    s = tProd(s, tExp([pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]], N), N);
+  return s;
+}
+
+function sigMSE(a, b, N) {
+  let err = 0, cnt = 0;
+  for (let k = 1; k <= N; k++)
+    for (let idx = 0; idx < a[k].length; idx++) {
+      const d = a[k][idx] - b[k][idx];
+      err += d * d; cnt++;
+    }
+  return err / cnt;
+}
+
+function miStr(k, idx) {
+  let s = '';
+  for (let j = k - 1; j >= 0; j--) s += ((idx >> j) & 1) === 0 ? 'x' : 'y';
+  return s;
+}
+
+// ===================== RENDERING =====================
+function renderAllMath() {
+  document.querySelectorAll('.math-label').forEach(el => {
+    if (!el.dataset.rendered) {
+      try { katex.render(el.dataset.formula, el, {throwOnError: false}); }
+      catch(e) { el.textContent = el.dataset.formula; }
+      el.dataset.rendered = '1';
+    }
+  });
+}
+function msp(f) {
+  return '<span class="math-label" data-formula="' + f.replace(/"/g, '&quot;') + '"></span>';
+}
+
+function renderSig(id, sig) {
+  const el = document.getElementById(id);
+  if (!sig) { el.innerHTML = '<p style="color:#9ca3af;font-size:.8rem;">Click on the canvas to draw a path</p>'; return; }
+  const N = sig.length - 1;
+  let mx = 0;
+  for (let k = 0; k <= N; k++)
+    for (let i = 0; i < sig[k].length; i++) mx = Math.max(mx, Math.abs(sig[k][i]));
+  if (mx === 0) mx = 1;
+  let h = '';
+  for (let k = 0; k <= N; k++) {
+    h += '<div class="sig-level"><div class="sig-level-title">Level ' + k + '</div>';
+    for (let i = 0; i < sig[k].length; i++) {
+      const v = sig[k][i];
+      const lb = k === 0 ? '1' : 'S^{' + miStr(k, i) + '}';
+      const pct = Math.min(Math.abs(v) / mx * 50, 50);
+      const cls = v >= 0 ? 'pos' : 'neg';
+      const bs = v >= 0 ? 'left:50%;width:'+pct+'%' : 'right:50%;width:'+pct+'%';
+      h += '<div class="sig-term"><div class="sig-label">' + msp(lb) + '</div>'
+        + '<div class="sig-bar-wrap"><div class="sig-bar ' + cls + '" style="' + bs + '"></div></div>'
+        + '<div class="sig-val">' + v.toFixed(3) + '</div></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+  renderAllMath();
+}
+
+// ===================== CANVAS =====================
+function drawGrid(ctx) {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 0.5;
+  for (let v = WORLD_MIN; v <= WORLD_MAX; v += 0.5) {
+    const [cx] = w2c(v, 0); const [, cy] = w2c(0, v);
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+  }
+  ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1;
+  const [ax, ay] = w2c(0, 0);
+  ctx.beginPath(); ctx.moveTo(ax, 0); ctx.lineTo(ax, H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, ay); ctx.lineTo(W, ay); ctx.stroke();
+  ctx.fillStyle = '#9ca3af'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+  for (let v = WORLD_MIN; v <= WORLD_MAX; v += 1) {
+    if (v === 0) continue;
+    const [cx] = w2c(v, 0); const [, cy] = w2c(0, v);
+    ctx.fillText(v.toString(), cx, ay + 12);
+    ctx.textAlign = 'right'; ctx.fillText(v.toString(), ax - 4, cy + 3); ctx.textAlign = 'center';
+  }
+  ctx.fillText('x', W - 8, ay - 4); ctx.fillText('y', ax + 10, 12);
+  ctx.restore();
+}
+
+function drawPath(ctx, pts, color, lw, showPts) {
+  if (pts.length < 1) return;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = lw || 2;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  const [sx, sy] = w2c(pts[0][0], pts[0][1]);
+  ctx.moveTo(sx, sy);
+  for (let i = 1; i < pts.length; i++) {
+    const [cx, cy] = w2c(pts[i][0], pts[i][1]);
+    ctx.lineTo(cx, cy);
+  }
+  ctx.stroke();
+  ctx.restore();
+  if (showPts) {
+    pts.forEach((p, i) => {
+      const [cx, cy] = w2c(p[0], p[1]);
+      ctx.beginPath(); ctx.arc(cx, cy, i === 0 ? 5 : 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = i === 0 ? color : '#fff'; ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+    });
+  }
+}
+
+function undo(st) { if (st.points.length > 0) st.points.pop(); }
+
+// ===================== TABS =====================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['draw','recon'][i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ===================== TAB 1: DRAW & COMPUTE =====================
+const drawState = { points: [] };
+
+function redrawTab1() {
+  const c = document.getElementById('c1');
+  drawGrid(c.getContext('2d'));
+  drawPath(c.getContext('2d'), drawState.points, '#3b82f6', 2.5, true);
+  const N = parseInt(document.getElementById('level1').value);
+  renderSig('sig-display-1', drawState.points.length >= 2 ? sigOf(drawState.points, N) : null);
+}
+
+document.getElementById('c1').addEventListener('click', function(e) {
+  drawState.points.push(getWorld(this, e));
+  redrawTab1();
+});
+
+// ===================== TAB 2: RECONSTRUCTION =====================
+const reconState = { points: [], chain: null, running: false, animId: null };
+const CHAIN_N = 64;
+
+function redrawTab2() {
+  const c = document.getElementById('c2');
+  const ctx = c.getContext('2d');
+  drawGrid(ctx);
+  if (reconState.chain) drawPath(ctx, reconState.chain, '#f67280', 1.5, false);
+  drawPath(ctx, reconState.points, '#3b82f6', 2.5, true);
+  updateReconInfo();
+}
+
+function updateReconInfo() {
+  const el = document.getElementById('sig-display-2');
+  if (reconState.points.length < 2) {
+    el.innerHTML = '<p style="color:#9ca3af;font-size:.8rem;">Draw a path, then click Reconstruct. A 64-segment chain starts as a straight line and is optimized to match the truncated signature, with regularization penalizing curvature and deviation from the straight line.</p>';
+    return;
+  }
+  const N = parseInt(document.getElementById('recon-level').value);
+  const origSig = sigOf(reconState.points, N);
+  if (!reconState.chain) {
+    renderSig('sig-display-2', origSig);
+    return;
+  }
+  const reconSig = sigOf(reconState.chain, N);
+  const mse = sigMSE(origSig, reconSig, N);
+
+  let h = '<div class="sig-header">Signature comparison (level ' + N + ')</div>';
+  h += '<table class="match-table"><tr><th></th><th>Original</th><th>Recon.</th><th></th></tr>';
+  for (let k = 0; k <= N; k++) {
+    for (let idx = 0; idx < origSig[k].length; idx++) {
+      const lb = k === 0 ? '1' : 'S^{' + miStr(k, idx) + '}';
+      const ov = origSig[k][idx], rv = reconSig[k][idx];
+      const d = Math.abs(ov - rv), ma = Math.max(Math.abs(ov), 1e-9);
+      const ok = d / ma < 0.05;
+      h += '<tr><td>' + msp(lb) + '</td><td>' + ov.toFixed(4) + '</td><td>' + rv.toFixed(4)
+        + '</td><td class="' + (ok ? 'ok' : 'diff') + '">' + (ok ? '&#10003;' : '&#10007;') + '</td></tr>';
+    }
+    if (k < N) h += '<tr><td colspan="4" style="border-bottom:2px solid #e5e7eb;"></td></tr>';
+  }
+  h += '</table>';
+  h += '<div class="status-bar" id="recon-status">MSE: ' + mse.toExponential(2) + '</div>';
+  el.innerHTML = h;
+  renderAllMath();
+}
+
+function stopRecon() {
+  reconState.running = false;
+  if (reconState.animId) { cancelAnimationFrame(reconState.animId); reconState.animId = null; }
+  document.getElementById('recon-btn').textContent = 'Reconstruct';
+}
+
+function startRecon() {
+  if (reconState.points.length < 2) return;
+  if (reconState.running) { stopRecon(); return; }
+
+  const N = parseInt(document.getElementById('recon-level').value);
+  const target = sigOf(reconState.points, N);
+  const start = reconState.points[0].slice();
+  const end = reconState.points[reconState.points.length - 1].slice();
+
+  // Initialize chain as a straight line from start to end with uniform spacing
+  // Add small random noise to break symmetry
+  const chain = new Array(CHAIN_N + 1);
+  for (let i = 0; i <= CHAIN_N; i++) {
+    const t = i / CHAIN_N;
+    chain[i] = [
+      start[0] * (1 - t) + end[0] * t + (i > 0 && i < CHAIN_N ? (Math.random() - 0.5) * 0.01 : 0),
+      start[1] * (1 - t) + end[1] * t + (i > 0 && i < CHAIN_N ? (Math.random() - 0.5) * 0.01 : 0)
+    ];
+  }
+  reconState.chain = chain;
+  reconState.running = true;
+  document.getElementById('recon-btn').textContent = 'Stop';
+  redrawTab2();
+
+  // Config
+  let iter = 0;
+  const nSeg = CHAIN_N;
+  const lr0 = 0.3;
+  const lamLine = 0.1 / (N * N);   // pull toward straight line (strong at low levels)
+  const lamSmooth = 0.5;            // penalize curvature (prevents curls)
+  const fdh = 0.002;
+
+  // Straight-line reference
+  const lineRef = new Array(CHAIN_N + 1);
+  for (let i = 0; i <= CHAIN_N; i++) {
+    const t = i / CHAIN_N;
+    lineRef[i] = [start[0] * (1 - t) + end[0] * t, start[1] * (1 - t) + end[1] * t];
+  }
+
+  function gradStep() {
+    if (!reconState.running) return;
+    const ch = reconState.chain;
+
+    // Build prefix and suffix signatures
+    const segExp = new Array(nSeg);
+    for (let i = 0; i < nSeg; i++)
+      segExp[i] = tExp([ch[i+1][0] - ch[i][0], ch[i+1][1] - ch[i][1]], N);
+
+    const prefix = new Array(nSeg + 1);
+    prefix[0] = idSig(N);
+    for (let i = 0; i < nSeg; i++)
+      prefix[i+1] = tProd(prefix[i], segExp[i], N);
+
+    const suffix = new Array(nSeg + 1);
+    suffix[nSeg] = idSig(N);
+    for (let i = nSeg - 1; i >= 0; i--)
+      suffix[i] = tProd(segExp[i], suffix[i+1], N);
+
+    const curSig = prefix[nSeg];
+    const mse = sigMSE(target, curSig, N);
+
+    if (isNaN(mse) || !isFinite(mse)) { stopRecon(); redrawTab2(); return; }
+    if (iter > 3000) { stopRecon(); redrawTab2(); return; }
+
+    iter++;
+
+    // Compute gradients: signature MSE + line pull + curvature penalty
+    const lr = lr0 / (1 + iter * 0.001);
+
+    for (let pi = 1; pi < nSeg; pi++) {
+      const px = ch[pi][0], py = ch[pi][1];
+      const prevX = ch[pi-1][0], prevY = ch[pi-1][1];
+      const nextX = ch[pi+1][0], nextY = ch[pi+1][1];
+
+      // Signature gradient via prefix-suffix finite differences
+      function evalP(dx, dy) {
+        const s1 = tExp([px + dx - prevX, py + dy - prevY], N);
+        const s2 = tExp([nextX - px - dx, nextY - py - dy], N);
+        return tProd(tProd(prefix[pi-1], tProd(s1, s2, N), N), suffix[pi+1], N);
+      }
+      const sPx = evalP(fdh, 0), sMx = evalP(-fdh, 0);
+      const sPy = evalP(0, fdh), sMy = evalP(0, -fdh);
+
+      let gx = 0, gy = 0, cnt = 0;
+      for (let k = 1; k <= N; k++) {
+        for (let idx = 0; idx < curSig[k].length; idx++) {
+          const e = curSig[k][idx] - target[k][idx];
+          gx += e * (sPx[k][idx] - sMx[k][idx]);
+          gy += e * (sPy[k][idx] - sMy[k][idx]);
+          cnt++;
+        }
+      }
+      gx /= (fdh * cnt);
+      gy /= (fdh * cnt);
+
+      // Straight-line pull: d/dp_i of lamLine * |p_i - lineRef_i|^2
+      gx += lamLine * (px - lineRef[pi][0]);
+      gy += lamLine * (py - lineRef[pi][1]);
+
+      // Curvature penalty: d/dp_i of lamSmooth * sum |2p_i - p_{i-1} - p_{i+1}|^2
+      // = 2 * lamSmooth * (2*p_i - p_{i-1} - p_{i+1})
+      gx += lamSmooth * 2 * (2 * px - prevX - nextX);
+      gy += lamSmooth * 2 * (2 * py - prevY - nextY);
+
+      // Update
+      const dx = lr * gx, dy = lr * gy;
+      if (isFinite(dx) && isFinite(dy)) {
+        ch[pi][0] = px - dx;
+        ch[pi][1] = py - dy;
+      }
+    }
+
+    // Redraw
+    const c = document.getElementById('c2');
+    const ctx = c.getContext('2d');
+    drawGrid(ctx);
+    drawPath(ctx, ch, '#f67280', 1.5, false);
+    drawPath(ctx, reconState.points, '#3b82f6', 2.5, true);
+    const statusEl = document.getElementById('recon-status');
+    if (statusEl) statusEl.textContent = 'Iter ' + iter + ' | MSE: ' + mse.toExponential(2);
+
+    reconState.animId = requestAnimationFrame(gradStep);
+  }
+
+  reconState.animId = requestAnimationFrame(gradStep);
+}
+
+document.getElementById('c2').addEventListener('click', function(e) {
+  reconState.points.push(getWorld(this, e));
+  stopRecon();
+  reconState.chain = null;
+  redrawTab2();
+});
+
+// ===================== INIT =====================
+redrawTab1();
+redrawTab2();
+</script>
+</body>
+</html>
