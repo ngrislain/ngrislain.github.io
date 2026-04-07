@@ -408,10 +408,10 @@ function startRecon() {
   redrawTab2();
 
   let iter = 0;
-  const lr0 = 1.0;
-  const lamL2 = 0.1;
+  const lr0 = 5.0;
+  const lamL2 = 0.5;
   const fdh = 0.002;
-  const noiseScale = 0.1; // noise stderr as fraction of gradient norm
+  const noiseScale = 0.3; // noise stderr as fraction of gradient norm
 
   function gradStep() {
     if (!reconState.running) return;
