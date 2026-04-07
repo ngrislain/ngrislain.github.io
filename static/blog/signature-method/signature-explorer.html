@@ -408,9 +408,10 @@ function startRecon() {
   redrawTab2();
 
   let iter = 0;
-  const lr0 = 0.15;
-  const lamL2 = 1.0;
+  const lr0 = 1.0;
+  const lamL2 = 0.1;
   const fdh = 0.002;
+  const noiseScale = 0.1; // noise stderr as fraction of gradient norm
 
   function gradStep() {
     if (!reconState.running) return;
@@ -465,8 +466,12 @@ function startRecon() {
       gx += lamL2 * 2 * (2 * px - prevX - nextX);
       gy += lamL2 * 2 * (2 * py - prevY - nextY);
 
+      // Add noise proportional to gradient norm
+      const gNorm = Math.sqrt(gx * gx + gy * gy);
+      gx += noiseScale * gNorm * randn();
+      gy += noiseScale * gNorm * randn();
+
       let dx = lr * gx, dy = lr * gy;
-      // Clip step to prevent divergence on large-coordinate paths
       const stepNorm = Math.sqrt(dx * dx + dy * dy);
       if (stepNorm > 0.05) { dx *= 0.05 / stepNorm; dy *= 0.05 / stepNorm; }
       if (isFinite(dx) && isFinite(dy)) {
