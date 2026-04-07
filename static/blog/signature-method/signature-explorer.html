@@ -385,11 +385,15 @@ function startRecon() {
   const start = reconState.points[0].slice();
   const end = reconState.points[reconState.points.length - 1].slice();
 
-  // 128-node chain, all points at origin, strong segment-length regularization
+  // 128-node chain, Gaussian random init, strong segment-length regularization
   const nSeg = CHAIN_N;
   const ch = new Array(CHAIN_N + 1);
-  for (let i = 0; i <= CHAIN_N; i++) ch[i] = [0, 0];
-  // Fix endpoints
+  // Box-Muller for Gaussian random
+  function randn() {
+    const u1 = Math.random(), u2 = Math.random();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  for (let i = 0; i <= CHAIN_N; i++) ch[i] = [0.3 * randn(), 0.3 * randn()];
   ch[0] = start.slice();
   ch[CHAIN_N] = end.slice();
   reconState.chain = ch;
@@ -399,7 +403,7 @@ function startRecon() {
 
   let iter = 0;
   const lr0 = 0.1;
-  const lamL2 = 1.0;
+  const lamL2 = 10.0;
   const fdh = 0.002;
 
   function gradStep() {
