@@ -1,3 +1,25 @@
 {
-  "posts": {}
+  "posts": {
+    "blog/2026-3-13-reading-note-sequentialparallel-duality-in-prefix-scannable-models": {
+      "content_hash": "0edbb71f3ba7e085"
+    },
+    "blog/2026-3-25-zerocost-posix-compliance-encoding-the-socket-state-machine-in-lean-4s-type-system": {
+      "content_hash": "4d3f51f25dce2165"
+    },
+    "blog/2026-3-29-reading-note-mamba3-and-the-state-space-model-renaissance": {
+      "content_hash": "0c29bc18629d6187"
+    },
+    "blog/2026-4-6-reading-note-the-signature-method-in-machine-learning": {
+      "content_hash": "018b22de186ed191"
+    },
+    "projects/2025-11-8-teaching-3d-geometry-with-pyxel": {
+      "content_hash": "4d56f54eccab307e"
+    },
+    "projects/2026-2-20-how-to-die-optimally--ai-meets-economics": {
+      "content_hash": "ad7e578feb9d1a8b"
+    },
+    "projects/2026-3-12-dont-vibe--prove": {
+      "content_hash": "d91db02fd733675d"
+    }
+  }
 }
