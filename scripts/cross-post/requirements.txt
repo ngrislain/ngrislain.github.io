@@ -1,0 +1,4 @@
+requests>=2.31
+beautifulsoup4>=4.12
+html2text>=2024.2
+substack-api>=0.3

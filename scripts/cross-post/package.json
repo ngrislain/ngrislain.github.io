@@ -1,0 +1,7 @@
+{
+  "name": "cross-post-math",
+  "private": true,
+  "dependencies": {
+    "katex": "^0.16.11"
+  }
+}

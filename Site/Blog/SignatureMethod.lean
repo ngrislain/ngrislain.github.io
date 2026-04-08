@@ -190,7 +190,7 @@ A few things to try:
 
 ## Reconstruction
 
-In the second tab, draw a target path (shown in blue), choose a truncation level, and click "Reconstruct". The tool finds a Bezier curve (shown in red) whose truncated signature matches the target. It runs Levenberg-Marquardt optimization over the Bezier control points, tries several random initializations, and keeps the smoothest solution. The polynomial degree of the Bezier curve is shown next to the dropdown; it follows the Witt formula for the dimension of the free Lie algebra at that level.
+In the second tab, draw a target path (shown in blue), choose a truncation level, and click "Reconstruct". The tool finds a smooth curve (shown in red) whose truncated signature matches the target at the chosen level. It tries several random starting shapes and keeps the smoothest one. The required curve complexity grows with the level (shown next to the dropdown).
 
 Try increasing the level progressively:
 

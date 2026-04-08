@@ -7,3 +7,8 @@ lake-packages/
 .DS_Store
 static/projects/.DS_Store
 # *.png
+
+# Cross-post scripts
+scripts/cross-post/node_modules/
+scripts/cross-post/dry-run/
+scripts/cross-post/__pycache__/

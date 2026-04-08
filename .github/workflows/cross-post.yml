@@ -1,0 +1,86 @@
+name: Cross-Post
+
+on:
+  workflow_run:
+    workflows: ["Deploy Verso Site"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cross-post:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          set -eux
+          curl -L https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
+          chmod +x elan-init.sh
+          ./elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Set Lean toolchain
+        run: |
+          set -eux
+          elan toolchain install $(cat lean-toolchain)
+          elan default $(cat lean-toolchain)
+
+      - name: Cache lake build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan
+            .lake
+          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean', 'lakefile.toml', 'lean-toolchain') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-
+
+      - name: Build site
+        run: |
+          set -eux
+          lake update
+          lake exe ngrislain-github-io --output build
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Node dependencies
+        working-directory: scripts/cross-post
+        run: npm install
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/cross-post/requirements.txt
+
+      - name: Cross-post to platforms
+        env:
+          MEDIUM_TOKEN: ${{ secrets.MEDIUM_TOKEN }}
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+          SUBSTACK_URL: ${{ secrets.SUBSTACK_URL }}
+          SUBSTACK_EMAIL: ${{ secrets.SUBSTACK_EMAIL }}
+          SUBSTACK_PASSWORD: ${{ secrets.SUBSTACK_PASSWORD }}
+        working-directory: scripts/cross-post
+        run: python main.py --build-dir ../../build
+
+      - name: Commit state changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cross-post-state.json
+          git diff --staged --quiet || git commit -m "Update cross-post state"
+          git push
