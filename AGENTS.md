@@ -1,5 +1,10 @@
 # AGENTS.md
 
+## Git
+
+- Never commit automatically. Always ask the user before committing.
+- Never push automatically. Always ask the user before pushing.
+
 ## Writing style
 
 When writing prose for blog posts or any user-facing text, write like a real person. Avoid patterns that signal AI-generated content:
