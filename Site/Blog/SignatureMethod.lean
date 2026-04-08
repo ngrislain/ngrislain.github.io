@@ -10,6 +10,9 @@ authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 04, day := 06 }
 %%%
 
+:::hero "Path Signature Explorer" "static/blog/signature-method/thumbnail.png"
+:::
+
 A reading note on [A Primer on the Signature Method in Machine Learning](https://arxiv.org/abs/1603.03788) by Ilya Chevyrev and Andrey Kormilitzin.
 
 I have been working on modeling long sequences of events and looking for techniques to build compact and expressive features from such sequences. The signature method caught my attention as a principled mathematical framework that does exactly this: it takes a path (any sequential data embedded in a vector space) and produces a collection of numbers that captures its essential geometric and analytic properties. The theory goes back to K. T. Chen in the 1950s, but it has found new life in machine learning over the past two decades, mostly through the work of Terry Lyons and collaborators in the rough path theory community.
@@ -49,13 +52,20 @@ In practice, we truncate at some level $`N`. The _truncated signature_ at level 
 - *Level 2* captures pairwise correlations between coordinates and, most importantly, the _signed area_ enclosed by the path. The Levy area $`A = \frac{1}{2}(S^{1,2} - S^{2,1})` measures the area enclosed between the path and the chord connecting its endpoints, with sign depending on orientation. This is the key geometric quantity that distinguishes clockwise from counterclockwise loops.
 - *Level 3 and beyond* capture increasingly fine-grained shape information: how the areas themselves evolve, and so on.
 
+To see this concretely, consider two paths from $`(0,0)` to $`(1,1)`:
+
+- Path A goes right then up: $`(0,0) \to (1,0) \to (1,1)`.
+- Path B goes up then right: $`(0,0) \to (0,1) \to (1,1)`.
+
+Both have the same level-1 signature: $`S^x = 1`, $`S^y = 1`. They end at the same point, so level 1 cannot tell them apart. But their level-2 signatures differ. For path A, $`S^{xy} = 1` and $`S^{yx} = 0`. For path B, $`S^{xy} = 0` and $`S^{yx} = 1`. The Levy area is $`+1/2` for A and $`-1/2` for B. The non-zero $`S^{xy}` in path A records that x moved before y. Level 2 captures the order of events.
+
 # Key properties
 
 The signature has four properties that make it well-suited as a feature map:
 
 ## Reparametrization invariance
 
-The signature of a path depends only on its image (the shape of the curve), not on the speed at which it is traversed. Formally, if $`\psi : [a,b] \to [a,b]` is a continuous non-decreasing surjection, then $`S(X \circ \psi) = S(X)`. This means the signature automatically ignores irrelevant timing variations and focuses on the geometry of the data.
+The signature of a path depends only on its image (the shape of the curve), not on the speed at which it is traversed. Formally, if $`\psi : [a,b] \to [a,b]` is a continuous non-decreasing surjection, then $`S(X \circ \psi) = S(X)`. If you trace the letter "S" slowly or quickly, the signature is identical. This means the signature automatically ignores irrelevant timing variations and focuses on the geometry of the data.
 
 ## Chen's identity
 
@@ -67,15 +77,17 @@ where the tensor product is defined component-wise as:
 
 $$`(A \otimes B)^{i_1, \ldots, i_k} = \sum_{m=0}^{k} A^{i_1, \ldots, i_m} \cdot B^{i_{m+1}, \ldots, i_k}.`
 
-Chen's identity is essential for computation: it lets you build the signature of a long path by composing the signatures of its pieces.
+As a small example, take the L-shaped path $`(0,0) \to (1,0) \to (1,1)`. The first segment has signature $`\exp((1,0))` and the second $`\exp((0,1))`. Applying the tensor product formula at level 2, the cross term is $`S^{xy} = A^{()} \cdot B^{xy} + A^x \cdot B^y + A^{xy} \cdot B^{()} = 0 + 1 \cdot 1 + 0 = 1`. The symmetric term $`S^{yx} = 0 + 0 \cdot 0 + 0 = 0`. Chen's identity has recorded that x-motion happened in the first piece and y-motion in the second.
+
+More generally, Chen's identity is essential for computation: it lets you build the signature of a long path by composing the signatures of its pieces.
 
 ## Shuffle product
 
 The product of two signature terms can be expressed as a linear combination of higher-order terms:
 
-$$`S(X)^I \cdot S(X)^J = \sum_{K \in I \sqcup\sqcup J} S(X)^K`
+$$`S(X)^I \cdot S(X)^J = \sum_{K \in I \mathbin{\text{Ш}} J} S(X)^K`
 
-where $`I \sqcup\sqcup J` denotes all interleavings (shuffles) of the multi-indices $`I` and $`J`. This generalizes the multiplication of polynomials and implies that the signature terms are not independent: there are algebraic constraints between them. The log-signature removes this redundancy.
+where $`I \mathbin{\text{Ш}} J` denotes all interleavings (shuffles) of the multi-indices $`I` and $`J`. For a simple case: if $`I = (x)` and $`J = (y)`, the shuffles are $`\{(x,y), (y,x)\}`, so $`S^x \cdot S^y = S^{xy} + S^{yx}`. For the L-shaped path above, this gives $`1 \cdot 1 = 1 + 0 = 1`. This generalizes the multiplication of polynomials and implies that the signature terms are not independent: there are algebraic constraints between them. The log-signature removes this redundancy.
 
 ## Uniqueness
 
@@ -89,9 +101,17 @@ For a single linear segment with increment $`\Delta = X_{i+1} - X_i \in \mathbb{
 
 $$`S(\text{segment}) = \exp(\Delta) = 1 + \Delta + \frac{\Delta \otimes \Delta}{2!} + \frac{\Delta \otimes \Delta \otimes \Delta}{3!} + \cdots`
 
-where $`\Delta \otimes \Delta` denotes the tensor product. The term at level $`k` is just
+where $`\Delta \otimes \Delta` denotes the tensor product (i.e. the outer product: the rank-2 tensor with entry $`(i,j)` equal to $`\Delta^i \cdot \Delta^j`).
+
+Why does the signature of a straight line look like this? On a linear segment, each coordinate moves at constant speed: $`dX^i_t = \Delta^i \, dt`. So the $`k`-fold iterated integral becomes:
+
+$$`S^{i_1, \ldots, i_k} = \int_{0 < t_1 < \cdots < t_k < 1} \Delta^{i_1} \cdots \Delta^{i_k} \, dt_1 \cdots dt_k = \Delta^{i_1} \cdots \Delta^{i_k} \cdot \frac{1}{k!}`
+
+The $`\Delta` values are constant and factor out; the remaining integral over the ordered simplex $`0 < t_1 < \cdots < t_k < 1` is always $`1/k!`. So the level-$`k` term is simply:
 
 $$`S(\text{segment})^{i_1, \ldots, i_k} = \frac{\Delta^{i_1} \cdot \Delta^{i_2} \cdots \Delta^{i_k}}{k!}.`
+
+For example, with $`\Delta = (3, 1)` in 2D, the level-2 terms are $`S^{xx} = 3 \cdot 3 / 2 = 9/2`, $`S^{xy} = 3 \cdot 1 / 2 = 3/2`, $`S^{yx} = 1 \cdot 3 / 2 = 3/2`, and $`S^{yy} = 1 \cdot 1 / 2 = 1/2`. Notice that $`S^{xy} = S^{yx}` for a single segment: a straight line encloses no area, so its Levy area is zero. Only when we compose multiple segments via Chen's identity do the cross terms diverge and signed areas appear.
 
 Then, by Chen's identity, the signature of the full piecewise linear path is:
 
@@ -154,7 +174,31 @@ The paper by Chevyrev and Kormilitzin gives a clear and self-contained introduct
 
 # Try it yourself
 
-The interactive module below lets you explore path signatures visually. In the first tab, draw a 2D path by clicking on the canvas and see the truncated signature computed in real time at the chosen level. In the second tab, draw a path and click "Reconstruct": a 64-segment chain starts as a straight line and is optimized by gradient descent to match the signature up to the chosen level. The loss combines the signature MSE with two regularizers: a straight-line pull (which dominates at low levels, keeping the chain straight when the signature allows it) and a curvature penalty (which prevents high-frequency curls). Gradients are computed efficiently using the prefix-suffix decomposition. At level 1, only displacement matters, so the chain stays straight. At higher levels, the chain bends progressively to capture signed areas and finer shape details.
+The interactive module below lets you explore path signatures hands-on.
+
+## Draw and Compute
+
+In the first tab, click on the canvas to place points. Each click adds a vertex, and the tool connects them into a piecewise linear path. The truncated signature appears on the right as a bar chart (blue for positive, red for negative values). Use the dropdown to change the truncation level.
+
+A few things to try:
+
+- Draw a straight horizontal line (two clicks, left to right). Only $`S^x` is non-zero at level 1. At level 2, the terms are symmetric: $`S^{xy} = S^{yx} = 0` because there is no y-movement.
+- Draw an L-shape: click at the center, then to the right, then up. You will see $`S^{xy}` become large and positive while $`S^{yx}` stays near zero, just like in the example above.
+- Draw the reverse L (center, then up, then right). Now $`S^{yx}` dominates and $`S^{xy}` is near zero.
+- Draw a closed loop (clockwise or counterclockwise). The Levy area $`\frac{1}{2}(S^{xy} - S^{yx})` reflects the enclosed area, and its sign tells you the orientation.
+- Increase the level to 4 or 5 and compare a figure-eight with a simple loop. Higher levels capture the more complex topology.
+
+## Reconstruction
+
+In the second tab, draw a target path (shown in blue), choose a truncation level, and click "Reconstruct". The tool finds a Bezier curve (shown in red) whose truncated signature matches the target. It runs Levenberg-Marquardt optimization over the Bezier control points, tries several random initializations, and keeps the smoothest solution. The polynomial degree of the Bezier curve is shown next to the dropdown; it follows the Witt formula for the dimension of the free Lie algebra at that level.
+
+Try increasing the level progressively:
+
+- At level 1, only the total displacement matters. The red curve is just a straight line from start to end, regardless of what you drew.
+- At level 2, the curve bends to match the signed areas. Draw a half-circle and see the red curve approximate its overall curvature.
+- At level 3 and beyond, finer shape details appear. Draw an S-curve and watch the Bezier curve capture both bends as you increase the level.
+
+The table on the right compares each signature term between the original and reconstructed paths. Green checkmarks mean the terms match within 5%, red crosses show where they diverge. This illustrates the core idea: low-level signatures capture coarse geometry (where the path goes), while higher levels encode progressively finer shape information (how it gets there).
 
 :::iframe "static/blog/signature-method/signature-explorer.html"
 :::

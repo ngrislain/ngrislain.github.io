@@ -10,6 +10,9 @@ authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 03, day := 29 }
 %%%
 
+:::hero "Mamba-3 architecture" "static/blog/mamba3/mamba3-architecture.png"
+:::
+
 A reading note on [Mamba-3: Improved Sequence Modeling using State Space Principles](https://arxiv.org/abs/2603.15569) by Aakash Lahoti, Kevin Y. Li, Berlin Chen, Caitlin Wang, Aviv Bick, J. Zico Kolter, Tri Dao, and Albert Gu (ICLR 2026).
 
 # The context
@@ -21,6 +24,8 @@ Yet despite their theoretical appeal, linear models still lag behind Transformer
 # Three ideas from one viewpoint
 
 The paper's methodological core is a commitment to the _state space model viewpoint_ as a source of architectural improvements. All three contributions arise naturally from SSM principles but would be unnatural or opaque from the perspective of linear attention or test-time training. This is itself an interesting meta-point: the framework you think in determines the improvements you find.
+
+![Mamba-2 vs Mamba-3 block architecture (Figure 2 from the paper)](static/blog/mamba3/mamba3-architecture.png)
 
 ## Exponential-trapezoidal discretization
 
