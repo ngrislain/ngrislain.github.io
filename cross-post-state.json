@@ -20,6 +20,12 @@
     },
     "projects/2026-3-12-dont-vibe--prove": {
       "content_hash": "d91db02fd733675d"
+    },
+    "blog/2026-5-7-reading-note-a-theory-of-deep-learning": {
+      "content_hash": "0edd4a28039aa630"
+    },
+    "blog/2026-5-7-reading-note-the-neural-tangent-kernel": {
+      "content_hash": "f1813cdc9671d72a"
     }
   }
 }
