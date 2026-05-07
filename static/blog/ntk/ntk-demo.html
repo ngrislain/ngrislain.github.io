@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NTK Kernel Regression Demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f7f8fa; color: #23272f;
+  line-height: 1.5; padding: 1rem;
+}
+.container { max-width: 960px; margin: 0 auto; }
+h1 { font-size: 1.25rem; margin-bottom: .15rem; }
+.subtitle { color: #6b7280; font-size: .85rem; margin-bottom: .8rem; }
+.panel { display: flex; gap: .8rem; flex-wrap: wrap; background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 6px; padding: .8rem; }
+.canvas-col { flex: 1 1 460px; min-width: 360px; }
+.info-col { flex: 1 1 260px; min-width: 240px; }
+.canvas-wrap {
+  position: relative; background: #fff;
+  border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden;
+}
+canvas { display: block; width: 100%; height: auto; }
+#main { cursor: crosshair; }
+.controls { display: flex; flex-direction: column; gap: .5rem; font-size: .82rem; }
+.row { display: flex; align-items: center; gap: .6rem; }
+.row label { min-width: 90px; color: #4b5563; }
+input[type=range] { flex: 1; }
+.value { min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; color: #2563eb; font-weight: 600; }
+.btn-row { display: flex; gap: .4rem; margin-top: .4rem; flex-wrap: wrap; }
+.btn {
+  padding: .35rem .7rem; border: 1px solid #d1d5db; background: #fff;
+  border-radius: 4px; font-size: .8rem; cursor: pointer; color: #374151;
+}
+.btn:hover { background: #f3f4f6; }
+.btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn.primary:hover { background: #1d4ed8; }
+.legend { font-size: .75rem; color: #4b5563; margin-top: .5rem; }
+.legend-item { display: inline-flex; align-items: center; gap: .3rem; margin-right: .8rem; }
+.swatch { width: 16px; height: 4px; border-radius: 2px; }
+.note { font-size: .75rem; color: #6b7280; padding: .4rem .55rem; background: #f9fafb;
+  border-radius: 4px; border: 1px solid #f3f4f6; margin-top: .5rem; }
+.eq { font-size: .82rem; padding: .25rem 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Neural Tangent Kernel: Regression Demo</h1>
+  <p class="subtitle">Click to add training points. The infinite-width ReLU NTK is computed in closed form, and the predictive mean is the kernel ridge regression solution.</p>
+
+  <div class="panel">
+    <div class="canvas-col">
+      <div class="canvas-wrap">
+        <canvas id="main" width="640" height="420"></canvas>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:#2563eb"></span>NTK posterior mean</span>
+        <span class="legend-item"><span class="swatch" style="background:#9ca3af;height:8px"></span>±1σ band</span>
+        <span class="legend-item"><span class="swatch" style="background:#ef4444"></span>training points</span>
+      </div>
+    </div>
+
+    <div class="info-col">
+      <div class="controls">
+        <div class="row">
+          <label>Depth L</label>
+          <input id="depth" type="range" min="1" max="6" step="1" value="3">
+          <span class="value" id="depthVal">3</span>
+        </div>
+        <div class="row">
+          <label>Bias β</label>
+          <input id="beta" type="range" min="0" max="0.5" step="0.05" value="0.1">
+          <span class="value" id="betaVal">0.10</span>
+        </div>
+        <div class="row">
+          <label>Noise σ²</label>
+          <input id="lambda" type="range" min="0" max="0.2" step="0.005" value="0.01">
+          <span class="value" id="lambdaVal">0.010</span>
+        </div>
+        <div class="row">
+          <label>Show NN samples</label>
+          <input id="showSamples" type="checkbox">
+        </div>
+        <div class="row">
+          <label>Width n</label>
+          <input id="width" type="range" min="20" max="2000" step="20" value="200">
+          <span class="value" id="widthVal">200</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="presetSin">Sine target</button>
+          <button class="btn" id="presetSteps">Step target</button>
+          <button class="btn" id="clear">Clear</button>
+        </div>
+        <div class="note">
+          The blue curve is the predictive mean of kernel ridge regression with the limiting ReLU NTK at depth <span id="curDepth">3</span>. The grey band is one standard deviation under the NTK Gaussian posterior. Toggle "Show NN samples" to overlay finite-width networks drawn at the chosen width.
+        </div>
+        <div class="note" id="kernelInfo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: .8rem; padding: .8rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px;">
+    <div style="font-size: .85rem; font-weight: 600; margin-bottom: .25rem;">Kernel matrix on test grid</div>
+    <div class="canvas-wrap" style="height: 180px;">
+      <canvas id="kernelCanvas" width="640" height="180"></canvas>
+    </div>
+    <div style="font-size: .72rem; color: #6b7280; margin-top: .25rem;">
+      Heatmap of <span id="ntkLabel">Θ_∞^(L)(x, x')</span> across the input grid. Brighter means more correlated.
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('main');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const padL = 50, padR = 20, padT = 20, padB = 30;
+const plotW = W - padL - padR, plotH = H - padT - padB;
+const xMin = -3, xMax = 3, yMin = -1.6, yMax = 1.6;
+
+const kCanvas = document.getElementById('kernelCanvas');
+const kCtx = kCanvas.getContext('2d');
+
+const X2px = x => padL + (x - xMin) / (xMax - xMin) * plotW;
+const Y2py = y => padT + (yMax - y) / (yMax - yMin) * plotH;
+const px2X = px => xMin + (px - padL) / plotW * (xMax - xMin);
+const py2Y = py => yMax - (py - padT) / plotH * (yMax - yMin);
+
+let data = [];
+let depth = 3, beta = 0.1, lambda = 0.01, width = 200, showSamples = false;
+
+function ntkRecurse(x, xp, L, beta) {
+  let Sxx = x * x + beta * beta;
+  let Sxxp = x * xp + beta * beta;
+  let Sxpxp = xp * xp + beta * beta;
+  let Theta = Sxxp;
+  for (let l = 1; l < L; l++) {
+    const denom = Math.sqrt(Sxx * Sxpxp);
+    let rho = denom > 1e-12 ? Sxxp / denom : 0;
+    rho = Math.max(-1, Math.min(1, rho));
+    const theta = Math.acos(rho);
+    const sin = Math.sin(theta);
+    const SxxpNew = denom / (2 * Math.PI) * (sin + (Math.PI - theta) * Math.cos(theta)) + beta * beta;
+    const SxxNew = Sxx / 2 + beta * beta;
+    const SxpxpNew = Sxpxp / 2 + beta * beta;
+    const dotS = (Math.PI - theta) / (2 * Math.PI);
+    Theta = Theta * dotS + SxxpNew;
+    Sxx = SxxNew;
+    Sxxp = SxxpNew;
+    Sxpxp = SxpxpNew;
+  }
+  return { ntk: Theta, gp: Sxxp };
+}
+
+function ntk(x, xp) { return ntkRecurse(x, xp, depth, beta).ntk; }
+function gpcov(x, xp) { return ntkRecurse(x, xp, depth, beta).gp; }
+
+function cholesky(A) {
+  const n = A.length;
+  const L = Array.from({length: n}, () => new Float64Array(n));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = A[i][j];
+      for (let k = 0; k < j; k++) s -= L[i][k] * L[j][k];
+      if (i === j) {
+        L[i][j] = Math.sqrt(Math.max(s, 1e-10));
+      } else {
+        L[i][j] = s / L[j][j];
+      }
+    }
+  }
+  return L;
+}
+
+function cholSolve(L, b) {
+  const n = L.length;
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = b[i];
+    for (let k = 0; k < i; k++) s -= L[i][k] * y[k];
+    y[i] = s / L[i][i];
+  }
+  const x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = y[i];
+    for (let k = i + 1; k < n; k++) s -= L[k][i] * x[k];
+    x[i] = s / L[i][i];
+  }
+  return x;
+}
+
+function predict() {
+  const N = data.length;
+  if (N === 0) return null;
+  const K = Array.from({length: N}, () => new Float64Array(N));
+  const y = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    y[i] = data[i].y;
+    for (let j = 0; j < N; j++) {
+      K[i][j] = ntk(data[i].x, data[j].x) + (i === j ? lambda : 0);
+    }
+  }
+  const L = cholesky(K);
+  const alpha = cholSolve(L, y);
+  const Ng = 200;
+  const xs = new Float64Array(Ng), mean = new Float64Array(Ng), variance = new Float64Array(Ng);
+  for (let i = 0; i < Ng; i++) {
+    xs[i] = xMin + (xMax - xMin) * i / (Ng - 1);
+    let m = 0;
+    const k = new Float64Array(N);
+    for (let j = 0; j < N; j++) {
+      k[j] = ntk(xs[i], data[j].x);
+      m += k[j] * alpha[j];
+    }
+    mean[i] = m;
+    const Kxx = ntk(xs[i], xs[i]);
+    const v = cholSolve(L, k);
+    let dot = 0;
+    for (let j = 0; j < N; j++) dot += k[j] * v[j];
+    variance[i] = Math.max(0, Kxx - dot);
+  }
+  return { xs, mean, variance };
+}
+
+function drawAxes() {
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let xv = -3; xv <= 3; xv += 1) {
+    ctx.moveTo(X2px(xv), padT);
+    ctx.lineTo(X2px(xv), H - padB);
+  }
+  for (let yv = -1.5; yv <= 1.5; yv += 0.5) {
+    ctx.moveTo(padL, Y2py(yv));
+    ctx.lineTo(W - padR, Y2py(yv));
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = '#9ca3af';
+  ctx.beginPath();
+  ctx.moveTo(padL, Y2py(0));
+  ctx.lineTo(W - padR, Y2py(0));
+  ctx.moveTo(X2px(0), padT);
+  ctx.lineTo(X2px(0), H - padB);
+  ctx.stroke();
+
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'center';
+  for (let xv = -3; xv <= 3; xv += 1) {
+    ctx.fillText(xv.toString(), X2px(xv), H - padB + 14);
+  }
+  ctx.textAlign = 'right';
+  for (let yv = -1; yv <= 1; yv += 0.5) {
+    ctx.fillText(yv.toFixed(1), padL - 6, Y2py(yv) + 4);
+  }
+}
+
+function drawPosterior() {
+  const result = predict();
+  if (!result) return;
+  const { xs, mean, variance } = result;
+
+  ctx.fillStyle = 'rgba(156, 163, 175, 0.28)';
+  ctx.beginPath();
+  for (let i = 0; i < xs.length; i++) {
+    const px = X2px(xs[i]);
+    const py = Y2py(mean[i] + Math.sqrt(variance[i]));
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const px = X2px(xs[i]);
+    const py = Y2py(mean[i] - Math.sqrt(variance[i]));
+    ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#2563eb';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for (let i = 0; i < xs.length; i++) {
+    const px = X2px(xs[i]);
+    const py = Y2py(mean[i]);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+function drawSamples() {
+  if (!showSamples) return;
+  const Ng = 100;
+  const xs = new Float64Array(Ng);
+  for (let i = 0; i < Ng; i++) xs[i] = xMin + (xMax - xMin) * i / (Ng - 1);
+  const colors = ['#10b981', '#f59e0b', '#a855f7'];
+  for (let s = 0; s < 3; s++) {
+    const W1 = new Float64Array(width), b1 = new Float64Array(width);
+    for (let i = 0; i < width; i++) { W1[i] = randn(); b1[i] = randn() * beta; }
+    const W2 = new Float64Array(width);
+    for (let i = 0; i < width; i++) W2[i] = randn();
+    const ys = xs.map(x => {
+      let y = 0;
+      for (let i = 0; i < width; i++) {
+        const z = W1[i] * x + b1[i];
+        y += W2[i] * Math.max(0, z);
+      }
+      return y / Math.sqrt(width);
+    });
+    ctx.strokeStyle = colors[s];
+    ctx.lineWidth = 1.1;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    for (let i = 0; i < Ng; i++) {
+      const px = X2px(xs[i]);
+      const py = Y2py(ys[i]);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function drawData() {
+  ctx.fillStyle = '#ef4444';
+  for (const p of data) {
+    ctx.beginPath();
+    ctx.arc(X2px(p.x), Y2py(p.y), 4.5, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  for (const p of data) {
+    ctx.beginPath();
+    ctx.arc(X2px(p.x), Y2py(p.y), 4.5, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+}
+
+function drawKernelMatrix() {
+  const Ng = 60;
+  kCtx.fillStyle = '#fff';
+  kCtx.fillRect(0, 0, kCanvas.width, kCanvas.height);
+  const xs = new Float64Array(Ng);
+  for (let i = 0; i < Ng; i++) xs[i] = xMin + (xMax - xMin) * i / (Ng - 1);
+  const M = Array.from({length: Ng}, () => new Float64Array(Ng));
+  let maxV = 0;
+  for (let i = 0; i < Ng; i++) {
+    for (let j = 0; j < Ng; j++) {
+      M[i][j] = ntk(xs[i], xs[j]);
+      if (M[i][j] > maxV) maxV = M[i][j];
+    }
+  }
+  const cellW = kCanvas.width / Ng;
+  const cellH = kCanvas.height / Ng;
+  for (let i = 0; i < Ng; i++) {
+    for (let j = 0; j < Ng; j++) {
+      const v = M[i][j] / maxV;
+      const r = Math.round(255 - v * 200);
+      const g = Math.round(255 - v * 110);
+      const b = Math.round(255 - v * 30);
+      kCtx.fillStyle = `rgb(${r},${g},${b})`;
+      kCtx.fillRect(j * cellW, (Ng - 1 - i) * cellH, cellW + 1, cellH + 1);
+    }
+  }
+}
+
+function render() {
+  drawAxes();
+  drawPosterior();
+  drawSamples();
+  drawData();
+  drawKernelMatrix();
+  document.getElementById('curDepth').textContent = depth;
+  const info = document.getElementById('kernelInfo');
+  const k0 = ntk(0, 0);
+  const k1 = ntk(0, 1);
+  const k2 = ntk(0, 2);
+  info.innerHTML = `Θ(0,0) = ${k0.toFixed(3)}, Θ(0,1) = ${k1.toFixed(3)}, Θ(0,2) = ${k2.toFixed(3)}.`;
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * canvas.width / rect.width;
+  const py = (e.clientY - rect.top) * canvas.height / rect.height;
+  if (px < padL || px > W - padR || py < padT || py > H - padB) return;
+  data.push({ x: px2X(px), y: py2Y(py) });
+  render();
+});
+
+document.getElementById('depth').addEventListener('input', e => {
+  depth = +e.target.value;
+  document.getElementById('depthVal').textContent = depth;
+  render();
+});
+document.getElementById('beta').addEventListener('input', e => {
+  beta = +e.target.value;
+  document.getElementById('betaVal').textContent = beta.toFixed(2);
+  render();
+});
+document.getElementById('lambda').addEventListener('input', e => {
+  lambda = +e.target.value;
+  document.getElementById('lambdaVal').textContent = lambda.toFixed(3);
+  render();
+});
+document.getElementById('width').addEventListener('input', e => {
+  width = +e.target.value;
+  document.getElementById('widthVal').textContent = width;
+  if (showSamples) render();
+});
+document.getElementById('showSamples').addEventListener('change', e => {
+  showSamples = e.target.checked;
+  render();
+});
+
+document.getElementById('presetSin').addEventListener('click', () => {
+  data = [];
+  for (let i = 0; i < 12; i++) {
+    const x = -2.5 + 5 * i / 11;
+    data.push({ x, y: Math.sin(1.6 * x) * 0.9 + (Math.random() - 0.5) * 0.1 });
+  }
+  render();
+});
+document.getElementById('presetSteps').addEventListener('click', () => {
+  data = [];
+  for (let i = 0; i < 14; i++) {
+    const x = -2.5 + 5 * i / 13;
+    let y = x < -1 ? -0.8 : (x < 1 ? 0.6 : -0.4);
+    y += (Math.random() - 0.5) * 0.08;
+    data.push({ x, y });
+  }
+  render();
+});
+document.getElementById('clear').addEventListener('click', () => {
+  data = [];
+  render();
+});
+
+document.getElementById('presetSin').click();
+</script>
+</body>
+</html>

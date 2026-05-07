@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal Channel and Reservoir</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f7f8fa; color: #23272f;
+  line-height: 1.5; padding: 1rem;
+}
+.container { max-width: 980px; margin: 0 auto; }
+h1 { font-size: 1.25rem; margin-bottom: .15rem; }
+.subtitle { color: #6b7280; font-size: .85rem; margin-bottom: .8rem; }
+.panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: .8rem; margin-bottom: .6rem; }
+.row { display: flex; gap: .6rem; flex-wrap: wrap; }
+.col { flex: 1 1 320px; min-width: 280px; }
+canvas { display: block; width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; background: #fff; }
+.controls { display: flex; flex-direction: column; gap: .45rem; font-size: .82rem; }
+.ctl { display: flex; align-items: center; gap: .5rem; }
+.ctl label { min-width: 110px; color: #4b5563; }
+input[type=range] { flex: 1; }
+.value { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; color: #2563eb; font-weight: 600; }
+.btn { padding: .35rem .7rem; border: 1px solid #d1d5db; background: #fff;
+  border-radius: 4px; font-size: .8rem; cursor: pointer; color: #374151; }
+.btn:hover { background: #f3f4f6; }
+.btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn.primary:hover { background: #1d4ed8; }
+.btn.danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+.btn-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.legend { font-size: .73rem; color: #4b5563; margin-top: .35rem; }
+.legend-item { display: inline-flex; align-items: center; gap: .3rem; margin-right: .8rem; }
+.swatch { width: 14px; height: 4px; border-radius: 2px; }
+.metric { font-size: .8rem; padding: .35rem .55rem; background: #f9fafb; border-radius: 4px;
+  display: flex; justify-content: space-between; }
+.metric strong { color: #111827; font-variant-numeric: tabular-nums; }
+.title { font-size: .82rem; font-weight: 600; margin-bottom: .25rem; color: #111827; }
+.note { font-size: .73rem; color: #6b7280; margin-top: .35rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Signal Channel and Reservoir</h1>
+  <p class="subtitle">A small MLP trained on noisy 1D regression. The empirical NTK spectrum splits into a signal channel (large eigenvalues, fast learning) and a reservoir (small eigenvalues, where memorized noise sits).</p>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="ctl"><label>Width</label><input id="width" type="range" min="20" max="300" step="10" value="80"><span class="value" id="widthV">80</span></div>
+      <div class="ctl"><label>Train points N</label><input id="ntrain" type="range" min="10" max="60" step="2" value="30"><span class="value" id="ntrainV">30</span></div>
+      <div class="ctl"><label>Noise std</label><input id="noise" type="range" min="0" max="0.5" step="0.02" value="0.18"><span class="value" id="noiseV">0.18</span></div>
+      <div class="ctl"><label>Learning rate</label><input id="lr" type="range" min="0.005" max="0.2" step="0.005" value="0.05"><span class="value" id="lrV">0.050</span></div>
+      <div class="ctl"><label>Steps / frame</label><input id="speed" type="range" min="1" max="50" step="1" value="20"><span class="value" id="speedV">20</span></div>
+      <div class="btn-row" style="margin-top: .3rem;">
+        <button class="btn primary" id="run">Start</button>
+        <button class="btn" id="step">Step 100</button>
+        <button class="btn danger" id="reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col panel">
+      <div class="title">Network function f(x)</div>
+      <canvas id="fitCanvas" width="500" height="280"></canvas>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:#9ca3af"></span>true signal</span>
+        <span class="legend-item"><span class="swatch" style="background:#ef4444"></span>noisy training data</span>
+        <span class="legend-item"><span class="swatch" style="background:#2563eb"></span>network</span>
+        <span class="legend-item"><span class="swatch" style="background:#10b981"></span>test points</span>
+      </div>
+    </div>
+    <div class="col panel">
+      <div class="title">Loss curves</div>
+      <canvas id="lossCanvas" width="500" height="280"></canvas>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:#ef4444"></span>train loss</span>
+        <span class="legend-item"><span class="swatch" style="background:#10b981"></span>test loss</span>
+      </div>
+      <div style="display: flex; gap: .4rem; margin-top: .35rem;">
+        <div class="metric" style="flex:1"><span>Step</span><strong id="stepM">0</strong></div>
+        <div class="metric" style="flex:1"><span>Train</span><strong id="trainM">—</strong></div>
+        <div class="metric" style="flex:1"><span>Test</span><strong id="testM">—</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Empirical NTK eigenspectrum on training set</div>
+    <canvas id="specCanvas" width="950" height="200"></canvas>
+    <div class="legend">
+      <span class="legend-item"><span class="swatch" style="background:#2563eb"></span>signal channel (large λ)</span>
+      <span class="legend-item"><span class="swatch" style="background:#cbd5e1"></span>reservoir (small λ, near-null)</span>
+    </div>
+    <div class="note">Vertical bars show eigenvalues of K_SS = J_S J_S^⊤ at the current parameters, sorted descending. The dashed line marks the boundary λ ≈ max(λ)/100. The histogram below shows how the residual r = f(x) − y projects onto each eigenvector. Memorized noise concentrates in the reservoir, where the test transfer cancels it.</div>
+  </div>
+</div>
+
+<script>
+const fitC = document.getElementById('fitCanvas'), fitX = fitC.getContext('2d');
+const lossC = document.getElementById('lossCanvas'), lossX = lossC.getContext('2d');
+const specC = document.getElementById('specCanvas'), specX = specC.getContext('2d');
+
+let width = 80, N = 30, noise = 0.18, lr = 0.05, speed = 20;
+let xtrain, ytrain, ytrue, xtest, ytest;
+let W1, b1, W2, b2;
+let step = 0, trainHist = [], testHist = [];
+let running = false;
+
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function targetFn(x) { return Math.sin(1.7 * x) * 0.9; }
+
+function reset() {
+  step = 0;
+  trainHist = []; testHist = [];
+  xtrain = new Float64Array(N); ytrain = new Float64Array(N); ytrue = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    xtrain[i] = -2.5 + 5 * (i + 0.5) / N + (Math.random() - 0.5) * 0.05;
+    ytrue[i] = targetFn(xtrain[i]);
+    ytrain[i] = ytrue[i] + randn() * noise;
+  }
+  const Nt = 80;
+  xtest = new Float64Array(Nt); ytest = new Float64Array(Nt);
+  for (let i = 0; i < Nt; i++) {
+    xtest[i] = -2.8 + 5.6 * i / (Nt - 1);
+    ytest[i] = targetFn(xtest[i]);
+  }
+  W1 = new Float64Array(width); b1 = new Float64Array(width);
+  W2 = new Float64Array(width); b2 = 0;
+  for (let i = 0; i < width; i++) {
+    W1[i] = randn();
+    b1[i] = randn() * 0.1;
+    W2[i] = randn();
+  }
+  document.getElementById('stepM').textContent = '0';
+  document.getElementById('trainM').textContent = '—';
+  document.getElementById('testM').textContent = '—';
+  redraw();
+}
+
+function forward(x) {
+  let y = b2;
+  const inv = 1 / Math.sqrt(width);
+  for (let i = 0; i < width; i++) {
+    const z = W1[i] * x + b1[i];
+    if (z > 0) y += W2[i] * z * inv;
+  }
+  return y;
+}
+
+function trainStep() {
+  const inv = 1 / Math.sqrt(width);
+  const gW1 = new Float64Array(width), gb1 = new Float64Array(width);
+  const gW2 = new Float64Array(width);
+  let gb2 = 0;
+  for (let n = 0; n < N; n++) {
+    const x = xtrain[n], yt = ytrain[n];
+    const z = new Float64Array(width), h = new Float64Array(width);
+    let yp = b2;
+    for (let i = 0; i < width; i++) {
+      z[i] = W1[i] * x + b1[i];
+      h[i] = z[i] > 0 ? z[i] : 0;
+      yp += W2[i] * h[i] * inv;
+    }
+    const err = (yp - yt) / N;
+    gb2 += err;
+    for (let i = 0; i < width; i++) {
+      const dh = err * W2[i] * inv;
+      gW2[i] += err * h[i] * inv;
+      if (z[i] > 0) {
+        gW1[i] += dh * x;
+        gb1[i] += dh;
+      }
+    }
+  }
+  for (let i = 0; i < width; i++) {
+    W1[i] -= lr * gW1[i];
+    b1[i] -= lr * gb1[i];
+    W2[i] -= lr * gW2[i];
+  }
+  b2 -= lr * gb2;
+  step++;
+}
+
+function meanLoss(xs, ys) {
+  let s = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const d = forward(xs[i]) - ys[i];
+    s += d * d;
+  }
+  return s / xs.length;
+}
+
+function computeKSS() {
+  const inv = 1 / Math.sqrt(width);
+  const P = 3 * width + 1;
+  const grads = Array.from({length: N}, () => new Float64Array(P));
+  for (let n = 0; n < N; n++) {
+    const x = xtrain[n];
+    const g = grads[n];
+    for (let i = 0; i < width; i++) {
+      const z = W1[i] * x + b1[i];
+      const ind = z > 0 ? 1 : 0;
+      const h = ind * z;
+      g[i] = ind * W2[i] * inv * x;
+      g[width + i] = ind * W2[i] * inv;
+      g[2 * width + i] = h * inv;
+    }
+    g[3 * width] = 1;
+  }
+  const K = Array.from({length: N}, () => new Float64Array(N));
+  for (let i = 0; i < N; i++) {
+    for (let j = i; j < N; j++) {
+      let s = 0;
+      const gi = grads[i], gj = grads[j];
+      for (let k = 0; k < P; k++) s += gi[k] * gj[k];
+      K[i][j] = s;
+      K[j][i] = s;
+    }
+  }
+  return K;
+}
+
+function jacobi(A, sweeps = 30) {
+  const n = A.length;
+  const V = Array.from({length: n}, (_, i) => {
+    const r = new Float64Array(n); r[i] = 1; return r;
+  });
+  const M = A.map(r => Float64Array.from(r));
+  for (let s = 0; s < sweeps; s++) {
+    for (let p = 0; p < n - 1; p++) {
+      for (let q = p + 1; q < n; q++) {
+        if (Math.abs(M[p][q]) < 1e-10) continue;
+        const theta = (M[q][q] - M[p][p]) / (2 * M[p][q]);
+        const t = theta >= 0 ? 1 / (theta + Math.sqrt(1 + theta * theta)) : 1 / (theta - Math.sqrt(1 + theta * theta));
+        const c = 1 / Math.sqrt(1 + t * t);
+        const s2 = t * c;
+        const Mpp = M[p][p], Mqq = M[q][q], Mpq = M[p][q];
+        M[p][p] = Mpp - t * Mpq;
+        M[q][q] = Mqq + t * Mpq;
+        M[p][q] = 0; M[q][p] = 0;
+        for (let r = 0; r < n; r++) {
+          if (r !== p && r !== q) {
+            const Mrp = M[r][p], Mrq = M[r][q];
+            M[r][p] = c * Mrp - s2 * Mrq; M[p][r] = M[r][p];
+            M[r][q] = s2 * Mrp + c * Mrq; M[q][r] = M[r][q];
+          }
+          const Vrp = V[r][p], Vrq = V[r][q];
+          V[r][p] = c * Vrp - s2 * Vrq;
+          V[r][q] = s2 * Vrp + c * Vrq;
+        }
+      }
+    }
+  }
+  const eigs = [];
+  for (let i = 0; i < n; i++) eigs.push({ val: M[i][i], vec: V.map(r => r[i]) });
+  eigs.sort((a, b) => b.val - a.val);
+  return eigs;
+}
+
+function drawFit() {
+  fitX.fillStyle = '#fff';
+  fitX.fillRect(0, 0, fitC.width, fitC.height);
+  const W = fitC.width, H = fitC.height;
+  const padL = 40, padR = 10, padT = 12, padB = 24;
+  const xMin = -3, xMax = 3, yMin = -1.4, yMax = 1.4;
+  const X2 = x => padL + (x - xMin) / (xMax - xMin) * (W - padL - padR);
+  const Y2 = y => padT + (yMax - y) / (yMax - yMin) * (H - padT - padB);
+  fitX.strokeStyle = '#e5e7eb'; fitX.lineWidth = 1;
+  fitX.beginPath();
+  for (let x = -3; x <= 3; x += 1) { fitX.moveTo(X2(x), padT); fitX.lineTo(X2(x), H - padB); }
+  for (let y = -1; y <= 1; y += 0.5) { fitX.moveTo(padL, Y2(y)); fitX.lineTo(W - padR, Y2(y)); }
+  fitX.stroke();
+  fitX.fillStyle = '#6b7280'; fitX.font = '10px system-ui'; fitX.textAlign = 'center';
+  for (let x = -3; x <= 3; x += 1) fitX.fillText(x, X2(x), H - padB + 12);
+  fitX.textAlign = 'right';
+  for (let y = -1; y <= 1; y += 0.5) fitX.fillText(y.toFixed(1), padL - 4, Y2(y) + 3);
+
+  fitX.strokeStyle = '#9ca3af'; fitX.lineWidth = 1.5; fitX.setLineDash([4, 3]);
+  fitX.beginPath();
+  for (let i = 0; i < 200; i++) {
+    const x = xMin + (xMax - xMin) * i / 199;
+    const y = targetFn(x);
+    if (i === 0) fitX.moveTo(X2(x), Y2(y)); else fitX.lineTo(X2(x), Y2(y));
+  }
+  fitX.stroke(); fitX.setLineDash([]);
+
+  fitX.strokeStyle = '#2563eb'; fitX.lineWidth = 2;
+  fitX.beginPath();
+  for (let i = 0; i < 200; i++) {
+    const x = xMin + (xMax - xMin) * i / 199;
+    const y = forward(x);
+    if (i === 0) fitX.moveTo(X2(x), Y2(y)); else fitX.lineTo(X2(x), Y2(y));
+  }
+  fitX.stroke();
+
+  for (let i = 0; i < N; i++) {
+    fitX.fillStyle = '#ef4444';
+    fitX.beginPath(); fitX.arc(X2(xtrain[i]), Y2(ytrain[i]), 3.5, 0, 2 * Math.PI); fitX.fill();
+    fitX.strokeStyle = '#fff'; fitX.lineWidth = 1; fitX.stroke();
+  }
+  for (let i = 0; i < xtest.length; i += 4) {
+    fitX.fillStyle = 'rgba(16, 185, 129, 0.4)';
+    fitX.beginPath(); fitX.arc(X2(xtest[i]), Y2(ytest[i]), 1.7, 0, 2 * Math.PI); fitX.fill();
+  }
+}
+
+function drawLoss() {
+  lossX.fillStyle = '#fff';
+  lossX.fillRect(0, 0, lossC.width, lossC.height);
+  const W = lossC.width, H = lossC.height;
+  const padL = 40, padR = 10, padT = 12, padB = 24;
+  if (trainHist.length === 0) return;
+  let maxL = 0;
+  for (const v of trainHist) if (v > maxL) maxL = v;
+  for (const v of testHist) if (v > maxL) maxL = v;
+  if (maxL <= 0) maxL = 1;
+  const minL = 1e-4;
+  const X2 = i => padL + i / (trainHist.length - 1 || 1) * (W - padL - padR);
+  const Y2 = v => padT + (1 - (Math.log10(Math.max(v, minL)) - Math.log10(minL)) / (Math.log10(maxL) - Math.log10(minL))) * (H - padT - padB);
+  lossX.strokeStyle = '#e5e7eb';
+  lossX.beginPath();
+  for (let dec = -4; dec <= Math.ceil(Math.log10(maxL)); dec++) {
+    lossX.moveTo(padL, Y2(Math.pow(10, dec)));
+    lossX.lineTo(W - padR, Y2(Math.pow(10, dec)));
+  }
+  lossX.stroke();
+  lossX.fillStyle = '#6b7280'; lossX.font = '10px system-ui'; lossX.textAlign = 'right';
+  for (let dec = -4; dec <= Math.ceil(Math.log10(maxL)); dec++) {
+    lossX.fillText('1e' + dec, padL - 4, Y2(Math.pow(10, dec)) + 3);
+  }
+  lossX.strokeStyle = '#ef4444'; lossX.lineWidth = 1.6;
+  lossX.beginPath();
+  for (let i = 0; i < trainHist.length; i++) {
+    if (i === 0) lossX.moveTo(X2(i), Y2(trainHist[i])); else lossX.lineTo(X2(i), Y2(trainHist[i]));
+  }
+  lossX.stroke();
+  lossX.strokeStyle = '#10b981'; lossX.lineWidth = 1.6;
+  lossX.beginPath();
+  for (let i = 0; i < testHist.length; i++) {
+    if (i === 0) lossX.moveTo(X2(i), Y2(testHist[i])); else lossX.lineTo(X2(i), Y2(testHist[i]));
+  }
+  lossX.stroke();
+}
+
+function drawSpec() {
+  specX.fillStyle = '#fff';
+  specX.fillRect(0, 0, specC.width, specC.height);
+  const W = specC.width, H = specC.height;
+  const padL = 36, padR = 16, padT = 14, padB = 26;
+  const eigs = jacobi(computeKSS());
+  const r = new Float64Array(N);
+  for (let i = 0; i < N; i++) r[i] = forward(xtrain[i]) - ytrain[i];
+  const projs = eigs.map(e => {
+    let s = 0;
+    for (let i = 0; i < N; i++) s += e.vec[i] * r[i];
+    return s * s;
+  });
+  const maxL = Math.max(eigs[0].val, 1e-8);
+  const threshold = maxL / 100;
+  const rmax = Math.max(...projs, 1e-8);
+  const barW = (W - padL - padR) / N;
+  const half = (H - padT - padB) / 2;
+  for (let i = 0; i < N; i++) {
+    const v = eigs[i].val;
+    const isSignal = v > threshold;
+    const h1 = (Math.max(v, 0) / maxL) * half;
+    const h2 = (projs[i] / rmax) * half;
+    specX.fillStyle = isSignal ? '#2563eb' : '#cbd5e1';
+    specX.fillRect(padL + i * barW + 1, padT + half - h1, barW - 2, h1);
+    specX.fillStyle = isSignal ? 'rgba(37, 99, 235, 0.5)' : 'rgba(203, 213, 225, 0.7)';
+    specX.fillRect(padL + i * barW + 1, padT + half, barW - 2, h2);
+  }
+  specX.strokeStyle = '#cbd5e1';
+  specX.beginPath();
+  specX.moveTo(padL, padT + half); specX.lineTo(W - padR, padT + half);
+  specX.stroke();
+  specX.strokeStyle = '#9ca3af'; specX.setLineDash([3, 3]);
+  specX.beginPath();
+  const yT = padT + half - (threshold / maxL) * half;
+  specX.moveTo(padL, yT); specX.lineTo(W - padR, yT); specX.stroke();
+  specX.setLineDash([]);
+  specX.fillStyle = '#6b7280'; specX.font = '10px system-ui'; specX.textAlign = 'left';
+  specX.fillText('eigenvalues λ_i (sorted)', padL + 4, padT + 10);
+  specX.fillText('|⟨v_i, residual⟩|² (allocation of residual to eigenmode)', padL + 4, padT + half + 12);
+  let sigE = 0, resE = 0;
+  for (let i = 0; i < N; i++) {
+    if (eigs[i].val > threshold) sigE += projs[i]; else resE += projs[i];
+  }
+  const total = sigE + resE + 1e-12;
+  specX.fillStyle = '#111827';
+  specX.textAlign = 'right';
+  specX.fillText(`signal channel: ${(100 * sigE / total).toFixed(1)}% of residual`, W - padR - 4, H - padB / 2);
+  specX.fillText(`reservoir: ${(100 * resE / total).toFixed(1)}%`, W - padR - 4, H - padB / 2 + 12);
+}
+
+function redraw() {
+  drawFit(); drawLoss(); drawSpec();
+}
+
+function frame() {
+  if (!running) return;
+  for (let i = 0; i < speed; i++) trainStep();
+  trainHist.push(meanLoss(xtrain, ytrain));
+  testHist.push(meanLoss(xtest, ytest));
+  if (trainHist.length > 600) { trainHist.shift(); testHist.shift(); }
+  document.getElementById('stepM').textContent = step;
+  document.getElementById('trainM').textContent = trainHist[trainHist.length - 1].toExponential(2);
+  document.getElementById('testM').textContent = testHist[testHist.length - 1].toExponential(2);
+  redraw();
+  requestAnimationFrame(frame);
+}
+
+function bindRange(id, varSetter) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', e => {
+    varSetter(+e.target.value);
+    document.getElementById(id + 'V').textContent = (+e.target.value).toString();
+  });
+}
+bindRange('width', v => { width = v; reset(); });
+bindRange('ntrain', v => { N = v; reset(); });
+bindRange('noise', v => { noise = v; document.getElementById('noiseV').textContent = v.toFixed(2); reset(); });
+bindRange('lr', v => { lr = v; document.getElementById('lrV').textContent = v.toFixed(3); });
+bindRange('speed', v => { speed = v; });
+
+document.getElementById('run').addEventListener('click', () => {
+  running = !running;
+  document.getElementById('run').textContent = running ? 'Pause' : 'Start';
+  if (running) requestAnimationFrame(frame);
+});
+document.getElementById('step').addEventListener('click', () => {
+  for (let i = 0; i < 100; i++) trainStep();
+  trainHist.push(meanLoss(xtrain, ytrain));
+  testHist.push(meanLoss(xtest, ytest));
+  document.getElementById('stepM').textContent = step;
+  document.getElementById('trainM').textContent = trainHist[trainHist.length - 1].toExponential(2);
+  document.getElementById('testM').textContent = testHist[testHist.length - 1].toExponential(2);
+  redraw();
+});
+document.getElementById('reset').addEventListener('click', reset);
+
+reset();
+</script>
+</body>
+</html>

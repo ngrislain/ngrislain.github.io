@@ -14,6 +14,8 @@ import Site.Blog.PrefixScan
 import Site.Blog.SocketStateMachine
 import Site.Blog.Mamba3
 import Site.Blog.SignatureMethod
+import Site.Blog.NTK
+import Site.Blog.Reservoir
 
 open Verso Genre Blog Site Syntax
 
@@ -22,6 +24,8 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
+      Site.Blog.Reservoir
+      Site.Blog.NTK
       Site.Blog.SignatureMethod
       Site.Blog.Mamba3
       Site.Blog.SocketStateMachine
