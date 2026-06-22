@@ -16,7 +16,7 @@ These are not logic bugs. They are resource bugs, and they surface late: at inte
 
 In a [previous post](/projects/2026-3-12-dont-vibe--prove) I argued that Lean 4's type system can encode _correctness_ specifications, so the compiler verifies them and the AI cannot ship code that violates them. This post is about the same idea applied to a different class of property: _resource constraints_. What if "this program never holds more than 100 records in memory" and "this program never has more than 3 files open at once" were facts the compiler checks, not hopes you have at review time?
 
-The full experiment is on [GitHub](https://github.com/ngrislain/lean-lab/tree/main/constrained-data). The short version: encode the limits in the types, hand the agent the unconstrained version, then turn the limits on and watch the implementation reorganise itself into something correct under the budget.
+The short version: encode the limits in the types, hand the agent the unconstrained version, then turn the limits on and watch the implementation reorganise itself into something correct under the budget.
 
 # Resource-aware types
 
@@ -36,7 +36,13 @@ instance (n : Nat) (cap : Option Nat) : Decidable (capOk n cap) := ...
 Now files. The key idea is to thread the _number of currently open files_ through the type. `FileIO filesCap n m α` is an IO action that starts with `n` files open, ends with `m` open, and produces an `α`. Opening a file goes from `n` to `n + 1`; closing goes from `n + 1` back to `n`.
 
 ```
--- an indexed IO: count of open files goes from n to m
+-- a phantom witness: "there are currently n files open"
+-- the private constructor means only our API can create or transform these tokens
+structure FileToken (n : Nat) where
+  private mk ::
+
+-- an indexed IO: takes a token witnessing n open files,
+-- returns a token witnessing m open files, plus a result α
 def FileIO (filesCap : Option Nat) (n m : Nat) (α : Type) :=
   FileToken n → IO (FileToken m × α)
 
@@ -48,7 +54,10 @@ def FileIO.openRead (path : FilePath) (_ : capOk n filesCap := by decide)
 def FileIO.closeHandle (handle : Handle mode) : FileIO filesCap (n + 1) n Unit := ...
 
 -- running requires you to start and end at zero open files
-def FileIO.run (env : Env) (x : FileIO env.filesCap 0 0 α) : IO α := ...
+-- the only way to get a FileToken 0 is here, so the caller cannot cheat
+def FileIO.run (env : Env) (x : FileIO env.filesCap 0 0 α) : IO α :=
+  let (tok, a) ← x (FileToken.mk)   -- hand out the initial token
+  pure a                              -- the final token is FileToken 0, enforced by the type
 ```
 
 Two things make this airtight. The `Handle` constructor is `private`, so the only way to get a handle is through `openRead` / `openWrite`, which charge you for it. And `FileIO.run` demands you start and end at zero, so every file you open must be closed. You cannot leak a handle, and you cannot open one past the cap, because the `capOk n filesCap` proof would not check.
@@ -66,6 +75,15 @@ structure Pool (α : Type) where
 structure Ref (α : Type) where
   private mk ::
   private idx : Nat
+
+-- same pattern as FileIO: a phantom token counts live refs
+structure MemToken (n : Nat) where
+  private mk ::
+
+-- MemM cap n m α: starts with n live refs, ends with m, produces α
+-- threads both the token (for the count) and the pool (for the data)
+def MemM (cap : Option Nat) (n m : Nat) (α : Type) :=
+  MemToken n → Pool Event → IO (MemToken m × Pool Event × α)
 
 -- allocating a ref needs room (n < cap) and bumps the live count
 def MemM.alloc (obj : Event) (_ : capOk n cap := by decide)
