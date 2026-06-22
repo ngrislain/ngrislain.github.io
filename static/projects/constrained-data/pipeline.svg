@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif">
+  <style>
+    .card { fill: #ffffff; stroke: #d9d9d9; stroke-width: 1.2; }
+    .file { fill: #eef3fa; stroke: #4a6fa5; stroke-width: 1.2; }
+    .run  { fill: #eef7f1; stroke: #3f9d70; stroke-width: 1.2; }
+    .shard{ fill: #fbf2e6; stroke: #c8853a; stroke-width: 1.2; }
+    .lbl  { fill: #333; font-size: 13px; }
+    .sub  { fill: #777; font-size: 11px; }
+    .title{ fill: #222; font-size: 14px; font-weight: 600; }
+    .arrow{ stroke: #999; stroke-width: 1.4; fill: none; marker-end: url(#a); }
+    .budget { fill: #f4ece2; stroke: #c8853a; stroke-width: 1; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#999"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="898" height="468" rx="10" fill="#fafafa" stroke="#e6e6e6"/>
+
+  <!-- Phase A -->
+  <text class="title" x="40" y="40">A. make sorted runs</text>
+  <text class="sub" x="40" y="58">read until the pool is full, sort, spill, free</text>
+  <rect class="file" x="40"  y="80" width="78" height="48" rx="5"/>
+  <rect class="file" x="40"  y="92" width="78" height="48" rx="5"/>
+  <rect class="file" x="40"  y="104" width="78" height="48" rx="5"/>
+  <text class="lbl" x="79" y="133" text-anchor="middle">31 days</text>
+  <text class="sub" x="79" y="148" text-anchor="middle">JSONL</text>
+
+  <path class="arrow" d="M122 128 L168 128"/>
+
+  <rect class="run" x="170" y="86" width="92" height="34" rx="5"/>
+  <text class="lbl" x="216" y="107" text-anchor="middle">run ≤ 100</text>
+  <rect class="run" x="170" y="128" width="92" height="34" rx="5"/>
+  <text class="lbl" x="216" y="149" text-anchor="middle">run ≤ 100</text>
+  <rect class="run" x="170" y="170" width="92" height="34" rx="5"/>
+  <text class="lbl" x="216" y="191" text-anchor="middle">run ≤ 100</text>
+
+  <!-- Phase B -->
+  <text class="title" x="320" y="40">B. pairwise merge</text>
+  <text class="sub" x="320" y="58">2 frontier events live at a time</text>
+  <path class="arrow" d="M266 103 L316 120"/>
+  <path class="arrow" d="M266 145 L316 132"/>
+  <rect class="run" x="318" y="110" width="92" height="34" rx="5"/>
+  <text class="lbl" x="364" y="131" text-anchor="middle">merged</text>
+
+  <path class="arrow" d="M266 187 L316 175"/>
+  <rect class="run" x="318" y="165" width="92" height="34" rx="5"/>
+  <text class="lbl" x="364" y="186" text-anchor="middle">merged</text>
+
+  <path class="arrow" d="M414 127 L452 145"/>
+  <path class="arrow" d="M414 182 L452 158"/>
+  <rect class="run" x="454" y="135" width="104" height="38" rx="5"/>
+  <text class="lbl" x="506" y="153" text-anchor="middle">one sorted</text>
+  <text class="lbl" x="506" y="168" text-anchor="middle">run</text>
+
+  <!-- Phase C -->
+  <text class="title" x="600" y="40">C. shard pass</text>
+  <text class="sub" x="600" y="58">stream per entity, chunk at the cap</text>
+  <path class="arrow" d="M562 154 L600 154"/>
+  <rect class="shard" x="602" y="84"  width="86" height="30" rx="5"/>
+  <text class="lbl" x="645" y="104" text-anchor="middle">shard 0</text>
+  <rect class="shard" x="602" y="120" width="86" height="30" rx="5"/>
+  <text class="lbl" x="645" y="140" text-anchor="middle">shard 1</text>
+  <rect class="shard" x="602" y="156" width="86" height="30" rx="5"/>
+  <text class="lbl" x="645" y="176" text-anchor="middle">...</text>
+  <rect class="shard" x="602" y="192" width="86" height="30" rx="5"/>
+  <text class="lbl" x="645" y="212" text-anchor="middle">shard 9</text>
+
+  <!-- Memory budget band -->
+  <rect class="budget" x="40" y="300" width="820" height="120" rx="8"/>
+  <text class="title" x="60" y="328">Memory budget</text>
+  <text class="sub" x="60" y="346">never more than 100 event contents materialised, at any phase</text>
+  <line x1="60" y1="392" x2="840" y2="392" stroke="#c8853a" stroke-width="2" stroke-dasharray="4 4"/>
+  <text class="sub" x="60" y="408">cap = 100</text>
+  <rect x="120" y="372" width="40" height="20" fill="#3f9d70" opacity="0.7"/>
+  <rect x="320" y="378" width="40" height="14" fill="#3f9d70" opacity="0.7"/>
+  <rect x="520" y="372" width="40" height="20" fill="#3f9d70" opacity="0.7"/>
+  <text class="sub" x="140" y="365" text-anchor="middle">phase A</text>
+  <text class="sub" x="340" y="365" text-anchor="middle">phase B</text>
+  <text class="sub" x="540" y="365" text-anchor="middle">phase C</text>
+</svg>
