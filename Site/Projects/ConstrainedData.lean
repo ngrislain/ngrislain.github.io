@@ -3,12 +3,15 @@ import Site.Embed
 
 open Verso Genre Blog
 
-#doc (Post) "Don't Vibe — Constrain" =>
+#doc (Post) "Vibe under constraint" =>
 
 %%%
 authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 06, day := 22 }
 %%%
+
+:::hero "External merge sort, as forced by a memory and file budget" "static/projects/constrained-data/pipeline.svg"
+:::
 
 Vibe coding is great. You describe what you want, the agent writes it, the tests pass, you ship. It keeps working right up to the moment it does not: the job gets killed by the OOM reaper in production, or it opens ten thousand file descriptors and falls over, or it runs fine on the sample and melts on the real dataset. The code was _correct_. It just assumed it had infinite memory and infinite file handles, because nothing in the problem statement said otherwise.
 
@@ -16,7 +19,7 @@ These are not logic bugs. They are resource bugs, and they surface late: at inte
 
 In a [previous post](/projects/2026-3-12-dont-vibe--prove) I argued that Lean 4's type system can encode _correctness_ specifications, so the compiler verifies them and the AI cannot ship code that violates them. This post is about the same idea applied to a different class of property: _resource constraints_. What if "this program never holds more than 100 records in memory" and "this program never has more than 3 files open at once" were facts the compiler checks, not hopes you have at review time?
 
-The short version: encode the limits in the types, hand the agent the unconstrained version, then turn the limits on and watch the implementation reorganise itself into something correct under the budget.
+The full experiment is on [GitHub](https://github.com/ngrislain/lean-lab/tree/main/constrained-data). The short version: encode the limits in the types, hand the agent the unconstrained version, then turn the limits on and watch the implementation reorganize itself into something correct under the budget.
 
 # Resource-aware types
 
@@ -210,11 +213,9 @@ def collectAndWrite (numShards : Nat := 10) : IO Unit := do
 
 # What the constraint produced
 
-Here is the thing worth sitting with. Nobody asked for external merge sort. The prompt did not say "implement Knuth's algorithm." The only new input was two numbers: 3 files, 100 records. The whole structure below, runs and merges and streaming shard passes, is what falls out of those two numbers once the type checker refuses every shortcut.
+Here is the thing worth sitting with. Nobody asked for external merge sort. The prompt did not say "implement Knuth's algorithm." The only new input was two numbers: 3 files, 100 records. The whole structure at the top of this post, runs and merges and streaming shard passes, is what falls out of those two numbers once the type checker refuses every shortcut.
 
-![External merge sort, as forced by the resource budget](static/projects/constrained-data/pipeline.svg)
-
-Memory stays flat across all three phases. Phase A holds at most one run (100 events) before spilling. Phase B holds the two frontier events of the merge. Phase C holds one entity's buffer, chunked at the cap. At no point are more than 100 event contents alive, and that is not a comment in the code promising good behaviour, it is a property the pool's type enforces.
+Look back at the diagram and read the peak memory under each phase. Phase A holds at most one run (100 events) before spilling. Phase B holds only the two frontier events of the merge. Phase C holds one entity's buffer, chunked at the cap. At no point are more than 100 event contents alive, and that is not a comment in the code promising good behavior, it is a property the pool's type enforces.
 
 # Type-driven vibe coding
 
