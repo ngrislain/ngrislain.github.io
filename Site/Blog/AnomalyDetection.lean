@@ -29,6 +29,17 @@ $$`s_i = -\log P\!\left(x_i \mid x_1, \ldots, x_{i-1}\right)`
 
 That is the anomaly score. It is measured in nats, it is never negative, and it adds up: the surprise of a whole window is the sum of the surprises of its symbols, which is exactly the negative log-likelihood of that window. No labels, no list of known attacks, no rule describing what bad looks like. The only ingredient is a model of what usually comes next.
 
+Worth being concrete about where that distribution comes from, because it is the same machinery that makes these models write.
+
+:::figframe "static/blog/genai-anomaly-detection/fig-tokens.html" "1320"
+:::
+
+One forward pass over the prefix produces one distribution over the entire vocabulary, 248,320 tokens for this model. To generate, you sample a token from that distribution, append it, and run the pass again. To score, you skip the sampling and instead look up the token that actually came next, then take minus log of the probability sitting in that slot. Same pass, same distribution, two different questions asked of it. Detection is generation with the die roll replaced by a lookup.
+
+The three panels are real output at three points in the contaminated text used later in this post. In ordinary English, after `computer science that develops`, the model's favourites are `algorithms` at 30.6% and `intelligent` at 18.5%; the text said `and`, its fourth choice at 6.8%, which costs 2.69 nats. Nothing happened. At the splice, after `achieving defined goals.`, it expects a paragraph break or `AI` or `The`; it gets `E`, ranked 602nd out of 248,320, probability 0.002%, and the score jumps to 11.09 nats. Something happened.
+
+The third panel is the one I did not expect. By the end of the Basque sentence the model's third most likely continuation is `E` at 10.4%, with `Ez` and `B` further down the list. It is expecting more Basque. It has moved its own notion of normal, in about two hundred characters, with no fitting and no retraining, and you can read that shift straight off the distribution.
+
 So the whole question becomes: where does that model come from?
 
 # Two ways to know what comes next
@@ -58,6 +69,18 @@ Read that as an n-gram and the mapping is exact. The feature is the context. The
 It works, and it has carried UEBA for a decade. But you pay both n-gram costs, per entity, forever. Every user, host and service needs its own fitted histogram for every feature you care about. A new employee has no baseline. A team that switches tools invalidates its baseline. And the context stays short by construction: a histogram of which hosts Alice signs into knows nothing about what Alice did in the previous ten minutes.
 
 The newer generation takes the second option. [Sweet Security](https://www.sweet.security/blog/hit-1-false-positive-rate-with-sweets-patent-pending-llm-cloud-detection-engine) aggregates events into sessions and has an LLM read the session, then labels each finding malicious, suspicious or bad practice. Mambark scores every event by negative log-likelihood under a model pretrained on next-event prediction. Different products, same move: replace the fitted per-entity table with a pretrained model of sequences in general.
+
+## An entity is a writer
+
+Everything from here on is about English prose, so it is worth pinning down the mapping that makes it transferable.
+
+*An entity is a writer.* A user, a host, a service account, an agent: each one emits a stream of events, and that stream is the text it writes. Each event is a token. What "normal" means for that writer is what normal means for prose, and it has the same three layers. A vocabulary: which APIs it calls, which hosts it reaches, which regions it appears in. A syntax: which event tends to follow which, in what order. And a register: bursty or steady, working hours or three in the morning, terse or verbose.
+
+Under that mapping a UEBA histogram is a frequency table over one feature of one writer. It counts the letters Alice tends to use. It is a good count, and it will tell you when Alice uses a letter she has never used before, but it does not know what language she writes in or what she was saying a paragraph ago.
+
+An anomaly is then a passage that does not read like the rest of the document. And the specific thing the experiment below is built around, a foreign sentence spliced into the middle of an English paragraph, is the case that matters most in security: _somebody else started writing halfway through_. Stolen credentials, a hijacked session, an insider stepping outside their role, an agent going off script. The document keeps Alice's name on it while the prose changes language mid-paragraph, and then changes back.
+
+Read the figures that follow with that in mind. The English is Alice going about her week. The Basque sentence is somebody else at her keyboard. The French one is somebody else who has read her email and is trying to sound like her.
 
 # The experiment
 
@@ -147,7 +170,7 @@ One last caveat. This is one text with two insertions, not a benchmark. Treat it
 
 # What this looks like on security data
 
-Security telemetry has the same shape as text. Audit logs, authentication events, process trees, API calls: sequences of discrete events, produced by entities, with strong local structure and long-range dependencies. Everything above transfers.
+Audit logs, authentication events, process trees, API calls: sequences of discrete events, produced by entities, with strong local structure and long-range dependencies. One writer per entity, one very long document each. Everything above transfers.
 
 Mambark is what it looks like built for that. It is a Mamba selective state-space model of about 96.9 million parameters, started from the open `mamba-130m` backbone, pretrained on next-event prediction over hundreds of billions of security events. State-space rather than transformer because the sequence lengths are brutal: a session can span thousands of events and a slow intrusion many more, and attention costs quadratic in that length while a state-space model costs linear. Events from every source are normalized the same way, grouped by entity, flattened into a fixed field structure and hashed into a shared vocabulary, so the architecture, tokenizer and training recipe stay identical across every benchmark with no hand-engineered features.
 

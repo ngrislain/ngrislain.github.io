@@ -75,6 +75,12 @@ mark.ins{background:#fdf6e9;color:inherit}
 </style>
 </head>
 <body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <linearGradient id="surprise" gradientUnits="userSpaceOnUse"
+      x1="0" y1="64" x2="0" y2="0"><stop offset="0.0000" stop-color="rgb(255, 80, 120)" stop-opacity="0.0"/><stop offset="0.0912" stop-color="rgb(255, 80, 120)" stop-opacity="0.0"/><stop offset="0.9637" stop-color="rgb(255, 80, 120)" stop-opacity="1.0"/><stop offset="1.0000" stop-color="rgb(255, 80, 120)" stop-opacity="1.0"/></linearGradient>
+  </defs>
+</svg>
 <p class="caption">Clean English: the first 1,200 characters of the Wikipedia article on artificial intelligence, with nothing spliced in.</p>
 <div class="grid" id="grid"></div>
 <div class="foot">
@@ -102,10 +108,12 @@ for (const p of PANELS) {
         ((p.span[1] - p.span[0]) * 560).toFixed(1) + '" height="64" fill="#fdf6e9"/>' : "") +
       '<line x1="0" x2="560" y1="' + p.meanY + '" y2="' + p.meanY +
         '" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3 3"/>' +
-      '<path d="' + p.path + '" fill="none" stroke="#e11d63" stroke-width="1" ' +
+      '<path d="' + p.path + '" fill="none" stroke="rgba(255,80,120,.14)" ' +
+        'stroke-width="0.75" vector-effect="non-scaling-stroke"/>' +
+      '<path d="' + p.path + '" fill="none" stroke="url(#surprise)" stroke-width="1.1" ' +
         'vector-effect="non-scaling-stroke"/>' +
-    '</svg><span class="tracelabel">surprise per character, 0 to 8 nats ' +
-    '(dashed: this panel\u2019s average)</span></div>';
+    '</svg><span class="tracelabel">surprise per character, 0 to 8 nats, ' +
+    'shaded like the text (dashed: this panel\u2019s average)</span></div>';
   fig.querySelector(".name").textContent = p.title;
   fig.querySelector(".stat").textContent = p.subtitle;
   p.box = fig.querySelector(".text");

@@ -163,6 +163,21 @@ def level_rules():
     return "\n".join(rules)
 
 
+def trace_stops():
+    """SVG stops giving the trace the same alpha ramp as the characters.
+
+    The trace draws surprise upward, so the ramp runs bottom to top: a point
+    down at the transparent end of the scale fades out, a spike at the solid
+    end is full strength. Offsets are fractions of the 0-to-8-nat axis.
+    """
+    marks = [(0.0, 0.0), (CLEAR_NATS, 0.0), (SOLID_NATS, 1.0), (TRACE_MAX_NATS, 1.0)]
+    return "".join(
+        f'<stop offset="{nats / TRACE_MAX_NATS:.4f}" stop-color="rgb{HIGHLIGHT}" '
+        f'stop-opacity="{alpha}"/>'
+        for nats, alpha in marks
+    )
+
+
 def gradient():
     stops = []
     for level in range(LEVELS):
@@ -226,6 +241,12 @@ $levels
 </style>
 </head>
 <body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <linearGradient id="surprise" gradientUnits="userSpaceOnUse"
+      x1="0" y1="64" x2="0" y2="0">$traceStops</linearGradient>
+  </defs>
+</svg>
 <p class="caption">$caption</p>
 <div class="grid" id="grid"></div>
 <div class="foot">
@@ -253,10 +274,12 @@ for (const p of PANELS) {
         ((p.span[1] - p.span[0]) * 560).toFixed(1) + '" height="64" fill="#fdf6e9"/>' : "") +
       '<line x1="0" x2="560" y1="' + p.meanY + '" y2="' + p.meanY +
         '" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3 3"/>' +
-      '<path d="' + p.path + '" fill="none" stroke="#e11d63" stroke-width="1" ' +
+      '<path d="' + p.path + '" fill="none" stroke="rgba(255,80,120,.14)" ' +
+        'stroke-width="0.75" vector-effect="non-scaling-stroke"/>' +
+      '<path d="' + p.path + '" fill="none" stroke="url(#surprise)" stroke-width="1.1" ' +
         'vector-effect="non-scaling-stroke"/>' +
-    '</svg><span class="tracelabel">surprise per character, 0 to 8 nats ' +
-    '(dashed: this panel\\u2019s average)</span></div>';
+    '</svg><span class="tracelabel">surprise per character, 0 to 8 nats, ' +
+    'shaded like the text (dashed: this panel\\u2019s average)</span></div>';
   fig.querySelector(".name").textContent = p.title;
   fig.querySelector(".stat").textContent = p.subtitle;
   p.box = fig.querySelector(".text");
@@ -347,6 +370,7 @@ def write_figure(name, title, caption, panels, wash=True):
         caption=caption,
         levels=level_rules(),
         gradient=gradient(),
+        traceStops=trace_stops(),
         wash=(
             '<span><span class="swatch"></span> where the text was really spliced in</span>'
             if wash

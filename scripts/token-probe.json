@@ -1,0 +1,113 @@
+[
+ {
+  "title": "Ordinary English",
+  "note": "mid-sentence, nothing wrong",
+  "prefix": "n engineering, mathematics, and computer science that develops",
+  "actual": " and",
+  "chars": 4,
+  "nats": 2.6850314140319824,
+  "prob": 0.06821905076503754,
+  "rank": 4,
+  "vocab": 248320,
+  "top": [
+   {
+    "tok": " algorithms",
+    "p": 0.30573657155036926
+   },
+   {
+    "tok": " intelligent",
+    "p": 0.1854386031627655
+   },
+   {
+    "tok": " systems",
+    "p": 0.07730231434106827
+   },
+   {
+    "tok": " and",
+    "p": 0.06821905076503754
+   },
+   {
+    "tok": " methods",
+    "p": 0.05312905088067055
+   },
+   {
+    "tok": " artificial",
+    "p": 0.04137694835662842
+   }
+  ]
+ },
+ {
+  "title": "The splice into Basque",
+  "note": "the first token of the inserted sentence",
+  "prefix": "ctions that maximise their chances of achieving defined goals.",
+  "actual": " E",
+  "chars": 2,
+  "nats": 11.091446876525879,
+  "prob": 1.5242135305015836e-05,
+  "rank": 602,
+  "vocab": 248320,
+  "top": [
+   {
+    "tok": " AI",
+    "p": 0.24562551081180573
+   },
+   {
+    "tok": "\n\n",
+    "p": 0.24562551081180573
+   },
+   {
+    "tok": " The",
+    "p": 0.1314738392829895
+   },
+   {
+    "tok": "\n",
+    "p": 0.05480645224452019
+   },
+   {
+    "tok": " In",
+    "p": 0.048366524279117584
+   },
+   {
+    "tok": " It",
+    "p": 0.04268330708146095
+   }
+  ]
+ },
+ {
+  "title": "Back out into English",
+  "note": "the first token after the inserted sentence",
+  "prefix": "zkuntzen sailkapenean hizkuntza bakartua izaten jarraitzen du.",
+  "actual": "\n",
+  "chars": 1,
+  "nats": 2.199295997619629,
+  "prob": 0.11088119447231293,
+  "rank": 2,
+  "vocab": 248320,
+  "top": [
+   {
+    "tok": "\n\n",
+    "p": 0.12564484775066376
+   },
+   {
+    "tok": "\n",
+    "p": 0.11088119447231293
+   },
+   {
+    "tok": " E",
+    "p": 0.10416324436664581
+   },
+   {
+    "tok": " \n\n",
+    "p": 0.028035156428813934
+   },
+   {
+    "tok": " AI",
+    "p": 0.02474093809723854
+   },
+   {
+    "tok": " \n",
+    "p": 0.02183380164206028
+   }
+  ]
+ }
+]
