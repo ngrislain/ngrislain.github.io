@@ -13,6 +13,33 @@ block_component +directive iframe (src : String) where
       </iframe>
     }}
 
+/-- An iframe that grows to whatever height its page reports.
+
+    The embedded page posts `{figHeight}` to its parent on load and on resize;
+    the listener below resizes the matching frame. `height` is the fallback
+    used until the first message arrives, and if the page never posts one. -/
+block_component +directive figframe (src : String) (height : String) where
+  toHtml _id _json _goI _goB _contents := do
+    pure {{
+      <div class="figframe">
+        <iframe src={{src}} style={{s!"width:100%;height:{height}px;border:1px solid #e0e0e0;border-radius:6px;display:block"}}
+          loading="lazy" scrolling="no">
+        </iframe>
+        <script>{{.text false "
+          if (!window.__figFrameWired) {
+            window.__figFrameWired = true;
+            window.addEventListener('message', function (event) {
+              var height = event.data && event.data.figHeight;
+              if (!height) return;
+              document.querySelectorAll('.figframe iframe').forEach(function (frame) {
+                if (frame.contentWindow === event.source) frame.style.height = height + 'px';
+              });
+            });
+          }
+        "}}</script>
+      </div>
+    }}
+
 block_component +directive hero (alt : String) (src : String) where
   toHtml _id _json _goI _goB _contents := do
     pure {{
