@@ -37,6 +37,11 @@ CLEAR_NATS, SOLID_NATS = 0.73, 7.71
 # Top of the trace's y-axis. Surprises above this are clamped.
 TRACE_MAX_NATS = 8.0
 
+# Stroke width of the trace, in device pixels, and the diameter of the opaque
+# tick dropped on it wherever an arrow above calls something out.
+CURVE_WIDTH = 2.0
+TICK_WIDTH = 2.0 * CURVE_WIDTH
+
 LEVELS = 24
 HIGHLIGHT = (255, 80, 120)
 
@@ -139,7 +144,16 @@ def panel_payload(title, text, nats, inserted, notes):
     mean = statistics.mean(finite)
     path, y_of = trace(nats)
     span = [i for i, flag in enumerate(inserted) if flag]
+    # One tick per annotation, sitting on the curve at that character, so the
+    # arrow over the text and the point on the trace name the same event.
+    step = 560.0 / max(1, len(nats) - 1)
+    ticks = [
+        {"x": round(note["at"] * step, 1), "y": round(y_of(nats[note["at"]]), 1)}
+        for note in notes
+        if note["at"] < len(nats)
+    ]
     return {
+        "ticks": ticks,
         "title": title,
         "subtitle": f"{mean:.2f} nats/char",
         "runs": runs(text, nats, inserted, {note["at"] for note in notes}),
@@ -223,11 +237,9 @@ mark.ins{background:#fdf6e9;color:inherit}
   border-radius:3px;padding:0 .28rem;box-shadow:0 1px 2px rgba(16,24,40,.09)}
 .marker i{display:block;width:0;height:0;margin:0 auto;
   border:3px solid transparent;border-top-color:var(--mark);border-bottom:0}
-.tracewrap{position:relative}
 .trace{display:block;width:100%;height:64px;
   background:var(--panel);border:1px solid var(--rule);border-radius:0 0 6px 6px}
-.tracelabel{position:absolute;left:.5rem;top:.1rem;color:#9ca3af;font-size:.64rem;
-  pointer-events:none;background:rgba(255,255,255,.82);padding:0 .2rem;border-radius:2px}
+.tracelabel{display:block;margin:.35rem 0 0 .1rem;color:#9ca3af;font-size:.68rem}
 .foot{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .7rem;margin-top:.8rem;
   padding-top:.6rem;border-top:1px solid var(--rule);color:var(--muted);font-size:.75rem}
 .bar{flex:0 0 110px;height:.55rem;border-radius:3px;border:1px solid var(--rule);
@@ -258,6 +270,7 @@ $levels
 <script>
 const PANELS = $panels;
 const LEVELS = $nlevels, CLEAR = $clear, SOLID = $solid;
+const CURVE_W = $curveW, TICK_W = $tickW;
 
 const shade = (nats) => nats === null ? 0 :
   Math.round(Math.min(1, Math.max(0, (nats - CLEAR) / (SOLID - CLEAR))) * (LEVELS - 1));
@@ -268,18 +281,25 @@ for (const p of PANELS) {
   fig.innerHTML =
     '<figcaption><span class="name"></span><span class="stat"></span></figcaption>' +
     '<div class="textwrap"><div class="text"></div></div>' +
-    '<div class="tracewrap">' +
+    '<div>' +
     '<svg class="trace" viewBox="0 0 560 64" preserveAspectRatio="none" aria-hidden="true">' +
       (p.span ? '<rect x="' + (p.span[0] * 560).toFixed(1) + '" y="0" width="' +
         ((p.span[1] - p.span[0]) * 560).toFixed(1) + '" height="64" fill="#fdf6e9"/>' : "") +
       '<line x1="0" x2="560" y1="' + p.meanY + '" y2="' + p.meanY +
         '" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3 3"/>' +
-      '<path d="' + p.path + '" fill="none" stroke="rgba(255,80,120,.14)" ' +
-        'stroke-width="0.75" vector-effect="non-scaling-stroke"/>' +
-      '<path d="' + p.path + '" fill="none" stroke="url(#surprise)" stroke-width="1.1" ' +
+      '<path d="' + p.path + '" fill="none" stroke="rgba(255,80,120,.16)" ' +
+        'stroke-width="' + (CURVE_W * 0.75).toFixed(2) + '" stroke-linejoin="round" ' +
         'vector-effect="non-scaling-stroke"/>' +
-    '</svg><span class="tracelabel">surprise per character, 0 to 8 nats, ' +
-    'shaded like the text (dashed: this panel\\u2019s average)</span></div>';
+      '<path d="' + p.path + '" fill="none" stroke="url(#surprise)" ' +
+        'stroke-width="' + CURVE_W + '" stroke-linejoin="round" ' +
+        'vector-effect="non-scaling-stroke"/>' +
+      // A zero-length line with a round cap is a true circle even though the
+      // viewBox is stretched horizontally, which an actual <circle> is not.
+      p.ticks.map((t) => '<line x1="' + t.x + '" y1="' + t.y + '" x2="' + t.x +
+        '" y2="' + t.y + '" stroke="var(--mark)" stroke-linecap="round" ' +
+        'stroke-width="' + TICK_W + '" vector-effect="non-scaling-stroke"/>').join("") +
+    '</svg><span class="tracelabel">Surprise per character, 0 to 8 nats, ' +
+    'shaded like the text. Dashed line: this panel\\u2019s average.</span></div>';
   fig.querySelector(".name").textContent = p.title;
   fig.querySelector(".stat").textContent = p.subtitle;
   p.box = fig.querySelector(".text");
@@ -380,6 +400,8 @@ def write_figure(name, title, caption, panels, wash=True):
         nlevels=LEVELS,
         clear=CLEAR_NATS,
         solid=SOLID_NATS,
+        curveW=CURVE_WIDTH,
+        tickW=round(TICK_WIDTH, 3),
     )
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / name

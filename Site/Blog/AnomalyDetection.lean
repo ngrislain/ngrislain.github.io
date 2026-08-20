@@ -31,7 +31,7 @@ That is the anomaly score. It is measured in nats, it is never negative, and it 
 
 Worth being concrete about where that distribution comes from, because it is the same machinery that makes these models write.
 
-:::figframe "static/blog/genai-anomaly-detection/fig-tokens.html" "1320"
+:::figframe "static/blog/genai-anomaly-detection/fig-tokens.html" "1321"
 :::
 
 One forward pass over the prefix produces one distribution over the entire vocabulary, 248,320 tokens for this model. To generate, you sample a token from that distribution, append it, and run the pass again. To score, you skip the sampling and instead look up the token that actually came next, then take minus log of the probability sitting in that slot. Same pass, same distribution, two different questions asked of it. Detection is generation with the die roll replaced by a lookup.
@@ -102,7 +102,7 @@ Under each panel the same numbers appear again as a trace, one point per charact
 
 # Clean text first
 
-:::figframe "static/blog/genai-anomaly-detection/fig-baseline.html" "1218"
+:::figframe "static/blog/genai-anomaly-detection/fig-baseline.html" "1264"
 :::
 
 The difference is hard to miss. After 193,003 characters of in-domain fitting, the 5-gram still spends 1.29 nats per character on ordinary English. Qwen spends 0.38, having been fitted on nothing at all. 4.5% of the n-gram's characters cost more than 3 nats, against 0.3% for Qwen. That is the noise floor, and it is what an analyst has to explain away before finding anything real. The arrows point at two of the loudest false alarms: 5.1 nats on `web search`, 5.1 nats on `virtual`. Both are plain English in an article about artificial intelligence.
@@ -115,7 +115,7 @@ That is the whole argument in one punctuation mark. Long context is not a nicety
 
 # A Basque sentence
 
-:::figframe "static/blog/genai-anomaly-detection/fig-basque.html" "1345"
+:::figframe "static/blog/genai-anomaly-detection/fig-basque.html" "1392"
 :::
 
 Both models catch it, and the two signals do not look alike at all.
@@ -130,7 +130,7 @@ The two models are measuring different things. The n-gram reports a _state_, "th
 
 # A French sentence
 
-:::figframe "static/blog/genai-anomaly-detection/fig-french.html" "1306"
+:::figframe "static/blog/genai-anomaly-detection/fig-french.html" "1353"
 :::
 
 French is the harder case, and it should be. It shares an alphabet, a lot of character statistics and a pile of vocabulary with English.
@@ -143,7 +143,7 @@ Then English resumes and it fires again, 3.96 nats on the line break. That exit 
 
 # Normal is whatever you fitted on
 
-:::figframe "static/blog/genai-anomaly-detection/fig-mirror.html" "1345"
+:::figframe "static/blog/genai-anomaly-detection/fig-mirror.html" "1392"
 :::
 
 Same text, same model order, same code. The only change is the fitting corpus: this 5-gram was fitted on Basque Wikipedia instead of English.
