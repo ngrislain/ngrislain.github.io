@@ -265,6 +265,9 @@ private def primary : Template := do
         {{footer}}
         <script>{{themeToggleClickScript}}</script>
         <script>{{highlightInitScript}}</script>
+        <!-- Cloudflare Web Analytics -->
+        <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{\"token\": \"2a206424538c4f8da18ef6ec2879e136\"}"></script>
+        <!-- End Cloudflare Web Analytics -->
       </body>
     </html>
   }}
