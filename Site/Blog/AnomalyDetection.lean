@@ -13,9 +13,9 @@ date := { year := 2026, month := 08, day := 20 }
 :::hero "Character-level surprise: a 5-gram fitted on English against Qwen3.5-0.8B-Base, same text, same scale" "static/blog/genai-anomaly-detection/thumbnail.png"
 :::
 
-I work on security detection at Datadog. The model I have been building, [Mambark](https://www.datadoghq.com/blog/ai/ai-security-detection-pipeline/), reads audit logs the way a language model reads text and scores every event by how surprising it is. It is a small model by today's standards, about 97 million parameters, and it looks at hundreds of billions of security events instead of sentences.
+I work on security detection at [Datadog](https://www.datadoghq.com/). The model I have been building, [Mambark](https://www.datadoghq.com/blog/ai/ai-security-detection-pipeline/), reads audit logs the way a language model reads text and scores every event by how surprising it is. It is a small model by today's standards, about 97 million parameters, and it looks at hundreds of billions of security events instead of sentences.
 
-The idea underneath is old and almost embarrassingly simple. I wanted to see it on its own, away from security telemetry and away from anything I cannot publish, so I built [a small open-source repo](https://github.com/ngrislain/anomaly-detection) that runs it on plain English text. This post is what it shows.
+The idea underneath is old and almost embarrassingly simple. I wanted to see it on its own, away from security telemetry and away from anything I cannot publish, so I built [a small open-source project](https://github.com/ngrislain/anomaly-detection) that runs it on plain English text. This post is what it shows.
 
 # Surprise is a score
 
@@ -29,18 +29,18 @@ $$`s_i = -\log P\!\left(x_i \mid x_1, \ldots, x_{i-1}\right)`
 
 That is the anomaly score. It is measured in nats, it is never negative, and it adds up: the surprise of a whole window is the sum of the surprises of its symbols, which is exactly the negative log-likelihood of that window. No labels, no list of known attacks, no rule describing what bad looks like. The only ingredient is a model of what usually comes next.
 
-Worth being concrete about where that distribution comes from, because it is the same machinery that makes these models write.
+That distribution is worth looking at directly, because it is the same machinery that makes these models write:
 
 :::figframe "static/blog/genai-anomaly-detection/fig-tokens.html" "1321"
 :::
 
-One forward pass over the prefix produces one distribution over the entire vocabulary, 248,320 tokens for this model. To generate, you sample a token from that distribution, append it, and run the pass again. To score, you skip the sampling and instead look up the token that actually came next, then take minus log of the probability sitting in that slot. Same pass, same distribution, two different questions asked of it. Detection is generation with the die roll replaced by a lookup.
+One forward pass over the prefix produces one distribution over the entire vocabulary, 248,320 tokens for this model. To generate, you sample a token from that distribution, append it, and run the pass again. To score, you skip the sampling and instead look up the token that actually came next, then take minus log of the probability sitting in that slot. Same pass, same distribution, two different questions asked of it. Detection is generation with the sampling step replaced by a lookup.
 
 The three panels are real output at three points in the contaminated text used later in this post. In ordinary English, after `computer science that develops`, the model's favourites are `algorithms` at 30.6% and `intelligent` at 18.5%; the text said `and`, its fourth choice at 6.8%, which costs 2.69 nats. Nothing happened. At the splice, after `achieving defined goals.`, it expects a paragraph break or `AI` or `The`; it gets `E`, ranked 602nd out of 248,320, probability 0.002%, and the score jumps to 11.09 nats. Something happened.
 
 The third panel is the one I did not expect. By the end of the Basque sentence the model's third most likely continuation is `E` at 10.4%, with `Ez` and `B` further down the list. It is expecting more Basque. It has moved its own notion of normal, in about two hundred characters, with no fitting and no retraining, and you can read that shift straight off the distribution.
 
-So the whole question becomes: where does that model come from?
+None of that is specific to Qwen, or to language. Any model that puts a probability on the next symbol can be read this way. So the interesting question is not whether to score by surprise, it is which model you ask, because whatever you pick is what defines "usually" and therefore what counts as an anomaly.
 
 # Two ways to know what comes next
 
@@ -54,7 +54,7 @@ You have to fit it, on the specific kind of text you are willing to call normal.
 
 ## A pretrained sequence model
 
-A language model conditions on the entire prefix. Every character since the beginning of the sequence is in the context window. And there is no fitting step: pretraining already covered English, French, Basque and Wikipedia prose, along with most other things. The model I used here is Qwen3.5-0.8B-Base, the base variant rather than the chat one, because post-training skews the distribution and makes it a worse likelihood estimator.
+A language model conditions on the entire prefix. Every character since the beginning of the sequence is in the context window. And there is no fitting step: pretraining already covered English, French, Basque and Wikipedia prose, along with most other things. The model I used here is [Qwen3.5-0.8B-Base](https://huggingface.co/Qwen/Qwen3.5-0.8B-Base), the base variant rather than the chat one, because post-training skews the distribution and makes it a worse likelihood estimator.
 
 The consequence is the interesting part. The baseline is not fitted in advance, it is assembled on the fly out of the beginning of the very sequence being scored. The first sentence tells the model this is English, this is encyclopedic register, this is about artificial intelligence. Everything after is judged against that. One model, any normal.
 
@@ -62,13 +62,13 @@ The consequence is the interesting part. The baseline is not fitted in advance, 
 
 This is not an abstract distinction. It is the shape of a whole product category.
 
-Exabeam's documentation is refreshingly direct about how its behavioral analytics works. "Our anomaly detection relies on statistical profiling of network entity behavior." "The statistical profiling is histogram frequency based." "Probability distributions are modeled using histograms." There are [three model types](https://docs.exabeam.com/en/cloud-delivered-advanced-analytics/all/administration-guide/configure-rules/how-exabeam-models-work.html): categorical, which "models a string with significance: number, host name, username", numerical clustered, and numerical time-of-week. Models are declared in a config file with a feature, a scope, an aging window and a convergence filter such as `confidence_factor>=0.8`.
+[Exabeam](https://www.exabeam.com/)'s documentation is refreshingly direct about how its behavioral analytics works. "Our anomaly detection relies on statistical profiling of network entity behavior." "The statistical profiling is histogram frequency based." "Probability distributions are modeled using histograms." There are [three model types](https://docs.exabeam.com/en/cloud-delivered-advanced-analytics/all/administration-guide/configure-rules/how-exabeam-models-work.html): categorical, which "models a string with significance: number, host name, username", numerical clustered, and numerical time-of-week. Models are declared in a config file with a feature, a scope, an aging window and a convergence filter such as `confidence_factor>=0.8`.
 
 Read that as an n-gram and the mapping is exact. The feature is the context. The histogram over its values is the frequency table. The scope decides which normal you are fitting: this user, this peer group, the whole organisation. The convergence filter is the "have I seen enough to score yet" test. The aging window is refitting. Deployment guides commonly suggest thirty to sixty days of baselining before alerting goes live.
 
 It works, and it has carried UEBA for a decade. But you pay both n-gram costs, per entity, forever. Every user, host and service needs its own fitted histogram for every feature you care about. A new employee has no baseline. A team that switches tools invalidates its baseline. And the context stays short by construction: a histogram of which hosts Alice signs into knows nothing about what Alice did in the previous ten minutes.
 
-The newer generation takes the second option. [Sweet Security](https://www.sweet.security/blog/hit-1-false-positive-rate-with-sweets-patent-pending-llm-cloud-detection-engine) aggregates events into sessions and has an LLM read the session, then labels each finding malicious, suspicious or bad practice. Mambark scores every event by negative log-likelihood under a model pretrained on next-event prediction. Different products, same move: replace the fitted per-entity table with a pretrained model of sequences in general.
+The newer generation takes the second option. [Sweet Security](https://www.sweet.security/) aggregates events into sessions and has [an LLM read the session](https://www.sweet.security/blog/hit-1-false-positive-rate-with-sweets-patent-pending-llm-cloud-detection-engine), then labels each finding malicious, suspicious or bad practice. Mambark scores every event by negative log-likelihood under a model pretrained on next-event prediction. Different products, same move: replace the fitted per-entity table with a pretrained model of sequences in general.
 
 ## An entity is a writer
 
@@ -84,7 +84,7 @@ Read the figures that follow with that in mind. The English is Alice going about
 
 # The experiment
 
-Everything below comes from one script in the repo, which fetches its own data from Wikipedia so you can reproduce it.
+Everything below comes from one script in that project, which fetches its own data from Wikipedia so you can reproduce it.
 
 The 5-gram is fitted on the English articles behind the searches "Machine learning", "Statistics", "Computer science" and "Mathematics". That is 193,003 characters, and it is deliberately generous: the same language and roughly the same subject as the text it will score.
 
@@ -102,6 +102,8 @@ Under each panel the same numbers appear again as a trace, one point per charact
 
 # Clean text first
 
+Start with text nobody has touched, read by both models:
+
 :::figframe "static/blog/genai-anomaly-detection/fig-baseline.html" "1264"
 :::
 
@@ -114,6 +116,8 @@ The most surprising character on the whole clean page, for Qwen, is a full stop.
 That is the whole argument in one punctuation mark. Long context is not a nicety here. It is what lets a model be surprised by an inconsistency rather than by an unusual letter pair.
 
 # A Basque sentence
+
+Now splice one Basque sentence in after the first sentence and score the whole thing again:
 
 :::figframe "static/blog/genai-anomaly-detection/fig-basque.html" "1392"
 :::
@@ -130,6 +134,8 @@ The two models are measuring different things. The n-gram reports a _state_, "th
 
 # A French sentence
 
+Same background, same splice point, a French sentence this time:
+
 :::figframe "static/blog/genai-anomaly-detection/fig-french.html" "1353"
 :::
 
@@ -142,6 +148,8 @@ Qwen keeps the same two-spike shape. 5.62 nats at the boundary on `C'est`, then 
 Then English resumes and it fires again, 3.96 nats on the line break. That exit spike is nearly twice the Basque one. Same mechanism read backwards: the model had settled more completely into French than it ever did into Basque, so coming back out was more of a jolt.
 
 # Normal is whatever you fitted on
+
+One last control:
 
 :::figframe "static/blog/genai-anomaly-detection/fig-mirror.html" "1392"
 :::
@@ -188,4 +196,4 @@ A pretrained sequence model encodes what usually happens. Not for this user, not
 
 Natural language processing took about a decade to make the jump from n-grams to pretrained models, and the jump did not make n-grams wrong. It made them the thing you reach for when you know exactly what you are modelling and you have the data to fit it. Security analytics is at the start of the same move, with the difference that the useful model is small and cheap enough to run on everything.
 
-The full report this post draws from, and the code that produces it, are at [github.com/ngrislain/anomaly-detection](https://github.com/ngrislain/anomaly-detection). It is a small repo, and more than half of it is the renderer for the figures above. Point it at your own text and see what surprises it.
+The full report this post draws from, and the code that produces it, are at [github.com/ngrislain/anomaly-detection](https://github.com/ngrislain/anomaly-detection). It is a small project, and more than half of it is the renderer for the figures above. Point it at your own text and see what surprises it.
