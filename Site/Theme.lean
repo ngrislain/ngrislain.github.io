@@ -246,14 +246,14 @@ private def primary : Template := do
         <meta property="og:type" content="article"/>
         <meta name="twitter:card" content="summary_large_image"/>
         <meta name="twitter:title" content={{← param (α := String) "title"}}/>
-        <script>{{themeToggleScript}}</script>
+        <script>{{Html.text false themeToggleScript}}</script>
         {{← builtinHeader}}
         <link rel="icon" type="image/svg+xml" href="static/favicon.svg"/>
         <link rel="alternate" type="application/rss+xml" title={{siteTitle}} href="feed.xml"/>
         <link rel="stylesheet" href="static/chalk.css" type="text/css"/>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"/>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-        <script>{{lean4GrammarScript}}</script>
+        <script>{{Html.text false lean4GrammarScript}}</script>
       </head>
       <body>
         {{← navigation}}
@@ -263,8 +263,8 @@ private def primary : Template := do
           {{categoryDirectory}}
         </main>
         {{footer}}
-        <script>{{themeToggleClickScript}}</script>
-        <script>{{highlightInitScript}}</script>
+        <script>{{Html.text false themeToggleClickScript}}</script>
+        <script>{{Html.text false highlightInitScript}}</script>
         <!-- Cloudflare Web Analytics -->
         <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{\"token\": \"2a206424538c4f8da18ef6ec2879e136\"}"></script>
         <!-- End Cloudflare Web Analytics -->
@@ -306,7 +306,7 @@ private def post : Template := do
       <div class="post-content">
         {{← param "content"}}
       </div>
-      <script>{{shareScript}}</script>
+      <script>{{Html.text false shareScript}}</script>
     </article>
   }}
 
