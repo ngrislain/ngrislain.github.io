@@ -26,6 +26,19 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 # purpose: they change during a build and would retrigger it forever.
 WATCH=(Site static lakefile.lean lean-toolchain)
 
+lock=".dev.lock"
+if [[ -f "$lock" ]]; then
+  other=$(cat "$lock" 2>/dev/null)
+  if [[ -n "$other" ]] && kill -0 "$other" 2>/dev/null; then
+    echo "dev.sh is already running as pid $other." >&2
+    echo "Two of them rebuild into the same build/ and corrupt each other." >&2
+    echo "Stop that one first, or: kill $other" >&2
+    exit 1
+  fi
+  echo "clearing a stale $lock from pid ${other:-?}" >&2
+fi
+echo $$ > "$lock"
+
 stamp=$(mktemp)
 fifo=$(mktemp -u)
 server=""
@@ -34,6 +47,7 @@ cleanup() {
   trap - EXIT INT TERM
   [[ -n "$server" ]] && kill "$server" 2>/dev/null
   [[ -n "$watcher" ]] && kill "$watcher" 2>/dev/null
+  [[ "$(cat "$lock" 2>/dev/null)" == "$$" ]] && rm -f "$lock"
   rm -f "$stamp" "$fifo"
 }
 trap cleanup EXIT INT TERM

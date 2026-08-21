@@ -12,3 +12,5 @@ static/projects/.DS_Store
 scripts/cross-post/node_modules/
 scripts/cross-post/dry-run/
 scripts/cross-post/__pycache__/
+# scripts/dev.sh single-instance lock
+.dev.lock
