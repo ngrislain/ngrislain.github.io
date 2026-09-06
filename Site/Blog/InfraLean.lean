@@ -212,22 +212,61 @@ The second is the one worth having. Wrapping the literal in a `map`, so it is no
 
 # The one idea I would keep
 
-Some of what you want to declare does not exist yet. A database endpoint is assigned by the cloud. A password is generated. So a declaration is allowed to hold a recipe for a value instead of the value, and the recipes live in a small language of five cases:
+Say you want a secret holding a connection string, built from a password you generate and an endpoint the cloud assigns. Neither value exists when you write the file. In Terraform this works:
 
 ```
-inductive Expr where
-  | lit          -- a value I already have
-  | observed     -- something the cloud will report once it exists
-  | secretValue  -- the value of one of this file's own secrets
-  | map          -- put a recipe through a function
-  | ap           -- combine two recipes into one
+resource "random_password" "db" { length = 32 }
+
+resource "aws_db_instance" "main" {
+  username = "dbadmin"
+  password = random_password.db.result
+}
+
+resource "aws_secretsmanager_secret_version" "url" {
+  secret_id     = aws_secretsmanager_secret.url.id
+  secret_string = format("postgres://dbadmin:%s@%s/main",
+                         random_password.db.result,
+                         aws_db_instance.main.endpoint)
+}
 ```
 
-That is the definition with its type parameters stripped out to make it readable. The real one is in `Infra/Core/Expr.lean` and carries the resource-reference type through every case, which is what stops a recipe referring to a resource that is not in this file.
+Terraform prints `(known after apply)` for both, works out the order from the references, and fills the string in as it goes. One apply, no pasting.
+
+Now move the same unknown one position to the left, out of a field and into the question of how many things exist:
+
+```
+resource "aws_instance" "web" {
+  for_each  = toset(aws_subnet.tier[*].id)   # subnets created in this same apply
+  subnet_id = each.value
+}
+```
+
+That one stops at plan time. Terraform cannot say how many instances there will be, so it cannot produce a plan at all, and the error suggests applying part of your configuration first with `-target` and then applying the rest.
+
+So Terraform already has the right rule: an unknown value may flow into a field, and may not decide how many things exist. What it does not have is a way to say that rule once. It lives in the core and in the providers, you meet it one attribute at a time, and you meet it after the configuration is written.
+
+Here the rule is the shape of the value you are allowed to write. A declaration can hold a recipe for something that does not exist yet, and there are five kinds of recipe:
+
+```
+inductive Expr (K : ProviderId → Kind → Type) : Type → Type 1 where
+  | lit         : α → Expr K α
+  | observed    (p : ProviderId) (k : Kind) : K p k → Expr K (ObservedOf k)
+  | secretValue (p : ProviderId) : K p .secrets → Expr K String
+  | map         : (α → β) → Expr K α → Expr K β
+  | ap          : Expr K (α → β) → Expr K α → Expr K β
+```
+
+`lit` is a value you already have. `observed` is something the cloud will report once the resource exists. `secretValue` is the value of one of this file's secrets. `map` and `ap` combine recipes into bigger recipes.
+
+`K` is the parameter that carries the weight, so it is worth reading rather than skipping. It is this file's own family of resource names, sorted by cloud and by kind, and it turns up in the two cases that read a value from somewhere: `observed` and `secretValue` both take a `K p k`. The only thing a recipe can read from is a resource that exists in this file. That is where "a reference cannot dangle" comes from, and it is the reason this little language is parameterised by the file it belongs to instead of standing on its own.
+
+(Two details for people who care: `α` and `β` are ordinary type variables, left implicit here. And the result is `Type 1` rather than `Type` because `map` and `ap` quantify over an intermediate type, which is a real consequence rather than a decoration: it is why every resource spec in the library has to be universe-polymorphic.)
 
 The interesting part is the case that is missing. There is deliberately no way to say "look at this value, then decide what to build".
 
-That sounds like a limitation and it is the whole point. If the plan could branch on a value the cloud has not returned yet, then the plan could not be computed before applying it, and "plan" would stop being a thing you can look at. Without branching, the dependency graph is fixed before anything runs. A declaration can hold three values it does not know. It can never hold an unknown _number_ of servers.
+That is Terraform's rule again, but as a property of the language rather than a check. `map` and `ap` let an unknown value flow into a field, which is the connection string above. Nothing lets you branch on one, so an unknown value cannot reach the question of how many resources exist. A declaration can hold three values it does not know. It can never hold an unknown _number_ of servers, because there is no way to write that down.
+
+The practical difference is when you find out. Terraform's `for_each` restriction is a plan-time error about the configuration you already wrote. Here the equivalent mistake has no spelling, so the plan is always computable, and "plan" stays a phase you can look at instead of a thing that sometimes cannot be produced.
 
 Writing those recipes out by hand is miserable, so there is a shorthand that looks like ordinary string interpolation:
 
@@ -249,13 +288,19 @@ The two holes in that string are the two arrows in the graph:
 
 ![db-password and postgres main both feed db-url](static/blog/infra-lean/dag.svg)
 
-Three resources, three creates, one apply. In Terraform, a connection string built from a generated password and a cloud-assigned endpoint is the classic two-apply problem, with a human pasting a value in between.
+Three resources, three creates, one apply, same as Terraform manages for the same case. The order comes from those arrows rather than from anything I wrote down: nothing in the file says the password comes first.
 
-# Deleting a line does not delete a resource
+# What deleting a line does, and what it should do
 
 One decision here does more work than the rest. Your declaration is not a list of resources. It is a verdict on every resource it knows the name of, and the names are a fixed, known set. Each one is either "should exist, like this", or "should not exist", or "not my business". You cannot leave one out, because leaving something out is not a thing the shape allows.
 
-The practical effect surprises people. Deleting a resource from the file does not delete it from the cloud. It is no longer one of the names, so nothing has an opinion about it, and it keeps running. Writing `.absent` is what turns "I no longer want this" into a delete. I trust that more than `terraform destroy` reading an absence as an instruction.
+Writing `.absent` is what turns "I no longer want this" into a delete, and it is the path to use.
+
+There is a gap here I should be straight about, because it is the one place where what shipped is not what was designed. Deleting a resource from the file does not delete it from the cloud. Once the line is gone the resource is not one of the names any more, so nothing can refer to it, and whatever is running stays running.
+
+That is not the intent. The type has a switch for it: alongside the per-resource verdicts there is a single verdict on everything else, where "should not exist" means a closed world and anything undeclared gets collected. Nothing reads that switch. The `fleet` command hardcodes it to "not my business", so it cannot even be flipped from the declaration, and `docs/coverage.md` lists it as the known defect most likely to matter.
+
+It is also not a five-minute fix, for a reason worth seeing. Membership is defined by the set of names, and deleting a line deletes the name. After that, "I used to manage this and changed my mind" and "this was never mine" are the same situation, and telling them apart needs a memory of what you managed before. The one candidate is the state cache, and the cache is deliberately not allowed to answer that question: it skips any name the current declaration does not mention, precisely so that pointing this at a populated account does not produce a screen of proposed deletions. That is the property that keeps other people's resources out of reach, and it is the same property that loses the information a closed world needs. The two goals are in tension, and the current code resolves the tension in favour of not touching things it was never given.
 
 # Why dependent types actually help here
 
