@@ -3,7 +3,7 @@ import Site.Embed
 
 open Verso Genre Blog
 
-#doc (Post) "Terraform in Lean 4: An Unrealisable Target Is a Compile Error" =>
+#doc (Post) "Terraform in Lean 4: If It Compiles, It Will Likely Deploy" =>
 
 %%%
 authors := ["Nicolas Grislain"]
@@ -29,12 +29,18 @@ That is the whole file, plus a one-line `main`. Now the part I did not expect to
 
 # Where the mistakes are caught
 
-The loop is Terraform's: observe, diff, reconcile. What differs is where mistakes are caught. Sorting that out honestly turned out to be most of the design work, and the repo keeps the answer as a table. Three tiers, and only the first two involve the compiler:
+The loop is Terraform's: observe, diff, reconcile. What differs is where mistakes are caught. Sorting that out honestly turned out to be most of the design work, and the repo keeps the answer as a table:
 
-:::pipeTable "Mistake | Caught | By what\n---|---|---\nA reference to a resource that does not exist | structural | a reference is an index into this fleet's own keys, so there is no \"not found\" case\nA resource that needs another and names none | structural | the field is unwrapped, so the structure literal is incomplete\nUsing a service a cloud does not have | structural | that cloud's key type for that kind is empty\nA plan whose shape depends on a post-apply value | structural | `Expr` has no `bind`\nAn instance size the family does not come in | elaboration | `Assert (f.sizes.contains s) := by decide`\nA region a cloud is not in | elaboration | `Assert (l.covers κ) := by decide`\nA bucket name someone else already took | apply | uniqueness is global, not a property of your file\nQuota, capacity, eventual consistency | apply | not a property of the configuration at all"
+:::pipeTable "Mistake | Caught | How\n---|---|---\nA reference to a resource that does not exist | compile time | there is nothing to write down: a reference can only be one of this file's own resources\nA resource that needs another and names none | compile time | the field has no default, so the resource is not finished without it\nUsing a service a cloud does not have | compile time | that cloud has no such resource type, so there is no name for it\nA plan whose shape depends on a value the cloud has not returned yet | compile time | the little expression language cannot branch on one\nAn instance size that does not exist | compile time | the compiler works out which sizes the family comes in, and checks\nA region a cloud is not in | compile time | the compiler works out which of your clouds have a region there\nA bucket name someone else already took | runtime | uniqueness is global, not a property of your file\nQuota, capacity, eventual consistency | runtime | not a property of the configuration at all"
 :::
 
-That bottom row is the honest half of any "types catch bugs" claim, and writing it down first is what kept the rest from being marketing.
+Two different things are happening in those compile-time rows, and the difference is worth holding on to. In the first four, the mistake has no spelling. There is no way to write the broken configuration down, so nothing has to be checked. In the next two you _can_ write it down, and the compiler decides by running a small function over what you wrote.
+
+(Lean people call the second kind an elaboration-time check, because it happens while the file is being turned into a program. For the rest of this post it is just compilation.)
+
+The last two rows are the honest half of any "types catch bugs" claim. Writing them down first is what kept the rest from turning into marketing.
+
+They are also why the title of this post is hedged. Compiling is not a promise that the apply will succeed. It is a promise about which kinds of failure are still on the table when you get there.
 
 # Five things Terraform cannot say
 
@@ -71,7 +77,7 @@ The field is declared once:
 securityGroup : Field .required o f (K .aws .securityGroup)
 ```
 
-Three consequences. Omitting it does not elaborate. Naming a group that is not in this fleet does not elaborate, because the type is an index into this fleet's own keys. Passing a bucket key does not elaborate, because `K` is indexed by cloud _and_ kind. The last one is the case a string could not catch at all: both resources are in AWS, both exist, and the names look alike.
+Three consequences, and none of them is a check that runs later. Leaving the field out does not compile. Naming a group that is not in this file does not compile, because the only things of that type are the groups declared above it. Passing a bucket does not compile either, because a reference carries the cloud and the kind of resource in its type, and a bucket is not a security group. That last one is the case a string could never catch: both resources are in AWS, both exist, and the names look alike.
 
 The first error is my favourite, because of what it is not:
 
@@ -100,19 +106,21 @@ resource scaleway objectStore "typednotes-assets" as assetsScaleway
   , tags       := [("project", "typednotes"), ("tier", "hot")] }
 ```
 
-One spec type, two clouds. Specs are indexed by kind and never by provider, so the cloud enters only at apply time. When you want something only one cloud has, you reach for a provider-local kind, and the loss of portability becomes visible in what you wrote:
+One spec, two clouds. A spec belongs to a kind of resource and never to a cloud, so the cloud only shows up when it is time to apply. When you want something only one cloud has, you reach for a provider-local kind, and the loss of portability becomes visible in what you wrote:
 
 ```
 resource aws s3Bucket "typednotes-archive" as archive
   { objectLock := true }
 ```
 
-A cloud that does not implement a kind gets the empty type for that pair, so there is no key to write down and nothing to mention:
+When a cloud does not implement a kind, there is simply no name for it, so nothing can refer to it:
 
 ```
 #guard crossCloud.keys.count .aws .postgres  = 0
 #guard crossCloud.keys.count .scaleway .s3Bucket = 0
 ```
+
+`#guard` there is a compile-time assertion: the compiler evaluates the line and refuses to build if it is not true. The repo has 348 of them and they serve as its test suite, so everything I quote below is checked on every build.
 
 ## t3.32xlarge
 
@@ -126,7 +134,7 @@ def InstanceType.of (f : InstanceFamily) (s : InstanceSize)
   ⟨s!"{f.code}.{s.code}"⟩
 ```
 
-So `InstanceType.of .t3 .xlarge32` gives:
+That third argument is the check, and you never write it. It claims `f.sizes.contains s`, the family comes in that size, and `by decide` tells the compiler to settle the claim by computing it. When the claim is true the compiler fills the argument in silently. When it is false there is nothing to fill it with, so `InstanceType.of .t3 .xlarge32` gives:
 
 ```
 could not synthesize default value for parameter '_h' using tactics
@@ -204,26 +212,24 @@ The second is the one worth having. Wrapping the literal in a `map`, so it is no
 
 # The one idea I would keep
 
-A target can hold values that do not exist yet. A database endpoint is assigned by the cloud; a password is generated. The type for that is a small expression language:
+Some of what you want to declare does not exist yet. A database endpoint is assigned by the cloud. A password is generated. So a declaration is allowed to hold a recipe for a value instead of the value, and the recipes live in a small language of five cases:
 
 ```
-inductive Expr (K : ProviderId → Kind → Type) : Type → Type 1 where
-  | lit      {α : Type} : α → Expr K α
-  | observed (p : ProviderId) (k : Kind) : K p k → Expr K (ObservedOf k)
-  | secretValue (p : ProviderId) : K p .secrets → Expr K String
-  | map      {α β : Type} : (α → β) → Expr K α → Expr K β
-  | ap       {α β : Type} : Expr K (α → β) → Expr K α → Expr K β
+inductive Expr where
+  | lit          -- a value I already have
+  | observed     -- something the cloud will report once it exists
+  | secretValue  -- the value of one of this file's own secrets
+  | map          -- put a recipe through a function
+  | ap           -- combine two recipes into one
 ```
 
-The interesting part is the constructor that is missing. There is deliberately no
+That is the definition with its type parameters stripped out to make it readable. The real one is in `Infra/Core/Expr.lean` and carries the resource-reference type through every case, which is what stops a recipe referring to a resource that is not in this file.
 
-```
-bind : Expr K α → (α → Expr K β) → Expr K β
-```
+The interesting part is the case that is missing. There is deliberately no way to say "look at this value, then decide what to build".
 
-because `bind` would let the _shape_ of the plan depend on a value that is not known until apply, and then "plan" stops existing as a phase. With only `map` and `ap`, the dependency graph is static and unknown values flow along fixed edges. A fleet may have three unknown handles. It can never have an unknown number of instances.
+That sounds like a limitation and it is the whole point. If the plan could branch on a value the cloud has not returned yet, then the plan could not be computed before applying it, and "plan" would stop being a thing you can look at. Without branching, the dependency graph is fixed before anything runs. A declaration can hold three values it does not know. It can never hold an unknown _number_ of servers.
 
-The cost is that writing anything by hand is miserable, so there is a macro that reads like Lean's own string interpolation:
+Writing those recipes out by hand is miserable, so there is a shorthand that looks like ordinary string interpolation:
 
 ```
 resource scaleway secrets "db-password" as pw
@@ -237,9 +243,9 @@ resource scaleway secrets "db-url"
       expr!"postgres://dbadmin:{secretValueOf pw}@{endpointOf db}/main" }
 ```
 
-It expands to exactly the `map` and `ap` chain you would have written. Nothing is added to `Expr`, and the restriction is not loosened, only made invisible: there is still no way to branch on an unknown value, because the syntax has nowhere to put a branch.
+That expands to exactly the recipe you would have assembled by hand. Nothing is added to the language, and the restriction is not relaxed, only hidden: there is still no way to branch on a value you do not have, because the syntax gives you nowhere to put a branch.
 
-The two holes in that string are the two edges of the graph:
+The two holes in that string are the two arrows in the graph:
 
 ![db-password and postgres main both feed db-url](static/blog/infra-lean/dag.svg)
 
@@ -247,25 +253,27 @@ Three resources, three creates, one apply. In Terraform, a connection string bui
 
 # Deleting a line does not delete a resource
 
-One design decision does more work than the rest. The target is a total function from this fleet's keys to a status, over a finite domain of keys. Total means no key can be forgotten, and it means `absent` is something you can say. So deletion is part of the target rather than an inference from omission.
+One decision here does more work than the rest. Your declaration is not a list of resources. It is a verdict on every resource it knows the name of, and the names are a fixed, known set. Each one is either "should exist, like this", or "should not exist", or "not my business". You cannot leave one out, because leaving something out is not a thing the shape allows.
 
-The practical effect surprises people: removing a resource from the declaration does not delete it from the cloud. It has no key any more, so nothing mentions it, and it keeps running. Saying `.absent` is what turns "I no longer want this" into a delete. I find I trust it more than `terraform destroy` reading absence as intent.
+The practical effect surprises people. Deleting a resource from the file does not delete it from the cloud. It is no longer one of the names, so nothing has an opinion about it, and it keeps running. Writing `.absent` is what turns "I no longer want this" into a delete. I trust that more than `terraform destroy` reading an absence as an instruction.
 
 # Why dependent types actually help here
 
-Four distinct things are doing the work, and only the first is the one people usually mean.
+"Dependent types" means types that can mention values. Four separate things follow from that here, and only the first is the one people usually have in mind.
 
-*Types indexed by values.* `Key p k`, `Region p`, `Field s`. The index is not documentation, it changes what the type contains: `Region .aws` and `Region .scaleway` are different types, so an AWS region cannot reach Scaleway by construction. Useful, and the least interesting item here.
+*A type can name a value.* A region is not a string, it is a region _of a particular cloud_, and the cloud is part of its type. `Region .aws` and `Region .scaleway` are two different types, so an AWS region cannot end up in a Scaleway call. Same for references: the cloud and the kind of resource are part of what a reference is, not a convention about how it is named. Useful, and the least interesting item here.
 
-*Decidable propositions as default arguments.* This is the move with no HCL analogue, and it is four lines:
+*The compiler will run your own checks.* This is the one with no HCL equivalent, and it is four lines:
 
 ```
 @[reducible] def Assert (b : Bool) : Prop := b = true
 ```
 
-Written as `(h : Assert (f.sizes.contains s) := by decide)`, the caller writes nothing and a violation is a compile error. Any decidable property of a configuration can join in: acyclicity, `κ.count .aws .compute ≤ 20`, name character sets, region coverage. Without dependent types you write these as a linter, which is a second implementation of your configuration's semantics, in another language, run at another time, free to disagree with the first. Here the predicate is an ordinary function sitting next to the data, and the compiler evaluates it.
+`Assert b` is the claim that `b` comes out true. Because a type can mention a value, that claim can be _about your configuration_, and it can be attached to a function as an argument nobody types: `(h : Assert (f.sizes.contains s) := by decide)`. The compiler computes `b` and either fills the argument in or stops the build.
 
-The error messages are the payoff, and I wrote none of them:
+Anything a program can compute about a configuration can go there. That the dependency graph has no cycles. That you asked for at most twenty servers. That a name uses only the characters the cloud accepts. That every cloud you use has a region where you put it. Without this you write those as a linter, which means a second implementation of what your configuration means, in a different language, run at a different time, free to disagree with the first. Here the check is an ordinary function next to the data it checks, and the thing that runs it is the compiler.
+
+The error messages are the payoff, and I did not write any of them:
 
 ```
 Tactic `decide` proved that the proposition
@@ -273,11 +281,11 @@ Tactic `decide` proved that the proposition
 is false
 ```
 
-That is the compiler quoting my own predicate back at me, with my own fleet substituted in.
+That is the compiler quoting my own check back at me, with my own file substituted into it.
 
-*One table, three jobs.* The locality table maps a place to each cloud's code. Autocomplete lists the places, `covers` decides the check, and 348 `#guard` statements across the repo pin the entries. The list of known region codes is derived from the same table rather than written out twice, so the two cannot drift. In HCL, the region list lives in the provider's Go source, in the documentation, and in your head, and those three disagree.
+*One table does three jobs.* The table of places maps each place to each cloud's own code for it. Your editor's autocomplete lists the places from it. The compile-time check reads it. The assertions pin its entries. The list of valid region codes is computed from it rather than typed out a second time, so the two cannot drift apart. In HCL that list lives in the provider's Go source, in the documentation, and in your head, and those three disagree.
 
-*Incompleteness is not a value.* A required field is not wrapped in the partiality modality at all, so a half-built resource is not an object with nulls in it. It is a function still waiting for an argument. That is the shift I would keep, and it is not "the type system rejects bad configurations". It is that the type of a configuration can be made small enough that most of the things you can write in it are things you could actually build.
+*A half-built resource is not a value.* A required field has no default and cannot be left unset, so a half-built resource is not an object with nulls in it. It is a function still waiting for an argument, which is why the error for a missing security group was a type mismatch about a function. That is the shift I would keep, and it is not "the type system rejects bad configurations". It is that the set of things you can even write can be made close to the set of things you could actually deploy.
 
 One more detail, which I think is load-bearing for anyone trying this. None of it is worth much if a stale table blocks you, and these tables are snapshots of catalogues that grow. So `Region.raw` and `InstanceType.raw` take a string on trust. A table falling behind its provider costs the author a more conspicuous spelling, never a wall. Get that wrong and the first missing region turns the type system into the enemy.
 
@@ -293,12 +301,12 @@ descriptions are strings less than 256 characters from the following
 set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*
 ```
 
-The description was "created and destroyed by infra's live test". An apostrophe is not in that set. Since descriptions are compile-time constants, that one would have failed every apply, for ever. It is a decidable property of a literal, so it can be an `Assert`, and now it is. But I would never have thought to write it. A type system checks the constraints you know about. The list of constraints you do not know about is longer, and you find it by calling the API.
+The description was "created and destroyed by infra's live test". An apostrophe is not in that set. Since descriptions are constants sitting in the file, that one would have failed every apply, for ever. Checking a character set is exactly the sort of thing the compiler can do for you, and it does now. But I would never have thought to write it. A type system checks the constraints you know about. The list of constraints you do not know about is longer, and you find it by calling the API.
 
 Then there is the tier that stays at runtime no matter what: whether a bucket name is globally unique, whether your quota covers the instance, whether the cloud has caught up with itself yet. No amount of indexing touches those.
 
 The scale gap is the real answer to "should you use this". Fourteen resource kinds against Terraform's thousands, across three clouds instead of hundreds of providers. No module registry, no state locking, no team workflow. If you need to ship infrastructure this week, use Terraform.
 
-What I would carry into a real tool is narrower than the tool itself. Make the target a value in a type small enough that unrealisable configurations are hard to write. Make decidable properties of that value default arguments the compiler discharges. Give every table a visibly ugly way out. The remaining 15,000 lines are HTTP clients, and they are the part that has bugs.
+What I would carry into a real tool is narrower than the tool itself. Make the desired state a value whose type is narrow enough that configurations you could not deploy are hard to write down. Let the compiler run your own checks over it, so you are not maintaining a separate linter that can disagree. Give every lookup table a deliberately ugly way out. The remaining 15,000 lines are HTTP clients, and they are the part that has bugs.
 
 The code is at [github.com/typednotes/infra](https://github.com/typednotes/infra), and `docs/coverage.md` is the honest account of how far it has been run, including the embarrassing parts.
