@@ -35,6 +35,9 @@
     },
     "blog/2026-8-20-language-models-are-anomaly-detectors": {
       "content_hash": "2df7c8456eff17da"
+    },
+    "blog/2026-9-6-terraform-in-lean-4-an-unrealisable-target-is-a-compile-error": {
+      "content_hash": "55fb3c45b1d7ccea"
     }
   }
 }
