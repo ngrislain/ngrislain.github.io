@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>hero</title><style>
+:root{--ink:#1f2328;--muted:#6b7280;--rule:#d8dde3;
+  --kw:#0550ae;--str:#a31515;--fld:#953800;--fn:#8250df;--pun:#6e7781;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;width:1200px;height:420px;background:#f7f8fa;color:var(--ink);
+  font-family:var(--sans);padding:24px 28px;display:flex;flex-direction:column}
+h1{font-size:19px;margin:0 0 3px;font-weight:600;letter-spacing:-.01em}
+h1 span{font-family:var(--mono);font-weight:700}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.cols{display:flex;gap:22px;flex:1;min-height:0;align-items:stretch}
+pre{margin:0;background:#fff;border:1px solid var(--rule);border-radius:6px;
+  padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;
+  flex:1 1 640px;min-width:0;overflow:hidden;color:var(--ink)}
+figure{margin:0;flex:0 0 430px;background:#fff;border:1px solid var(--rule);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;padding:8px}
+figure img{width:100%;height:auto}
+.k{color:var(--kw);font-weight:600}.s{color:var(--str)}.f{color:var(--fld)}
+.n{color:var(--fn)}.p{color:var(--pun)}
+.h1x{background:#fef3c7;border-radius:3px;padding:0 2px}
+.h2x{background:#dbeafe;border-radius:3px;padding:0 2px}
+.note{margin:14px 0 0;background:#fff5f5;border:1px solid #f3c4c4;border-radius:6px;
+  padding:9px 13px;font-family:var(--mono);font-size:11.5px;line-height:1.5;color:#8a1c1c}
+.note b{color:#b91c1c;font-weight:700}
+</style></head><body>
+
+<h1><span>infra</span>: infrastructure as code in Lean 4</h1>
+<p class="sub">One apply, not two: a secret composed from a generated password and an endpoint the cloud has not assigned yet.</p>
+
+<div class="cols">
+<pre><span class="k">fleet</span> connected <span class="k">where</span>
+  <span class="k">resource</span> scaleway secrets <span class="s">"db-password"</span> <span class="k">as</span> pw
+    <span class="p">{</span> <span class="f">valueFrom</span> <span class="p">:=</span> <span class="n">fromEnv</span> <span class="s">"DB_PASSWORD"</span> <span class="p">}</span>
+  <span class="k">resource</span> scaleway postgres <span class="s">"main"</span> <span class="k">as</span> db
+    <span class="p">{</span> <span class="f">masterUsername</span> <span class="p">:=</span> <span class="s">"dbadmin"</span><span class="p">,</span> <span class="f">maxCapacity</span> <span class="p">:=</span> 4 <span class="p">}</span>
+  <span class="k">resource</span> scaleway secrets <span class="s">"db-url"</span>
+    <span class="p">{</span> <span class="f">valueFrom</span> <span class="p">:=</span> <span class="n">composed</span>
+        <span class="n">expr!</span><span class="s">"postgres://{</span><span class="h1x">secretValueOf pw</span><span class="s">}@{</span><span class="h2x">endpointOf db</span><span class="s">}/main"</span> <span class="p">}</span></pre>
+
+<figure><img src="dag.svg" alt="db-password and postgres main both feed db-url"></figure>
+</div>
+
+<p class="note"><b>fleet</b> webTier <b>in</b> warsaw <b>where</b> …
+<br>&nbsp;&nbsp;Tactic `decide` proved that the proposition
+<br>&nbsp;&nbsp;&nbsp;&nbsp;Assert (Locality.warsaw.covers keys)
+<br>&nbsp;&nbsp;is false<span style="color:#6b7280">&nbsp;&nbsp;&nbsp;AWS has no region in Warsaw, so this fleet cannot be placed there.</span></p>
+
+</body></html>
