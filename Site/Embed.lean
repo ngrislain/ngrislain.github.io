@@ -86,3 +86,25 @@ private def parsePipeTable (src : String) : Html :=
 block_component +directive pipeTable (src : String) where
   toHtml _id _json _goI _goB _contents := do
     pure (parsePipeTable src)
+
+/-- Two code panes side by side, each with a caption.
+
+    Newlines in the code arguments are written as `\n`. On a wide screen the
+    block breaks out of the text column, since two panes need more room than
+    prose does; below that it stacks. -/
+block_component +directive sideBySide
+    (leftTitle : String) (leftCode : String)
+    (rightTitle : String) (rightCode : String) where
+  toHtml _id _json _goI _goB _contents := do
+    pure {{
+      <div class="side-by-side">
+        <figure>
+          <figcaption>{{leftTitle}}</figcaption>
+          <pre><code>{{leftCode}}</code></pre>
+        </figure>
+        <figure>
+          <figcaption>{{rightTitle}}</figcaption>
+          <pre><code>{{rightCode}}</code></pre>
+        </figure>
+      </div>
+    }}
