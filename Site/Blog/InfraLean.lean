@@ -17,7 +17,7 @@ I spent two weekends building [infra](https://github.com/typednotes/infra), an i
 
 It was an experiment with one question behind it. How many of the mistakes you normally discover halfway through an `apply` can be moved into the compiler, if the compiler has dependent types? And does that actually make the loop faster, or does it just move the pain earlier?
 
-There is a second reason, and I will state it rather than pretend the first one was enough. Lean 4 is the language I most enjoy writing, and it is the best language I know for working with an AI. Not because it generates Lean well, it generates Python better. Because in Lean "it compiles" carries information. An agent writing Python gives you something plausible; an agent writing Lean gives you something the compiler has already argued with. The feedback loop is short, precise and machine-checkable, and I would rather spend my weekend inside that loop than reading a diff hoping it is right. Infrastructure code is a good place to test the idea, because infrastructure is where a plausible-looking mistake costs money and downtime instead of a stack trace.
+There is a second reason, and I would rather state it plainly than pretend the first one sufficed. Lean 4 is the language I most enjoy writing, and it is the best language I know for working alongside an AI. Not because it generates Lean well — it generates Python rather better. It is because in Lean, "it compiles" carries information. An agent writing Python hands you something plausible; an agent writing Lean hands you something the compiler has already argued with. The feedback loop is short, precise and machine-checkable, and I would rather spend my weekend inside that loop than read a diff and hope for the best. Infrastructure code is a fitting place to test the idea, since infrastructure is where a plausible-looking mistake costs money and downtime rather than a mere stack trace.
 
 Here is a complete deployment:
 
@@ -27,11 +27,11 @@ fleet exampleQueue in paris where
     { visibilityTimeoutSec := 30 }
 ```
 
-That is the whole file, plus a one-line `main`. And the part I did not expect to like as much as I do: `in paris` could be `in warsaw` here, and it would compile. In the file next door, which declares resources on both AWS and Scaleway, `in warsaw` is a compile error, because AWS has no region in Warsaw. Same word, same syntax. Whether it is legal depends on the rest of the file.
+That is the entire file, plus a one-line `main`. And here is the detail I did not expect to enjoy quite so much: `in paris` could just as well be `in warsaw`, and it would still compile. In the file next door, which declares resources on both AWS and Scaleway, `in warsaw` is a compile error, because AWS has no region in Warsaw. Same word, same syntax — whether it is legal depends on the rest of the file.
 
 # Where the mistakes are caught
 
-The loop is Terraform's: observe, diff, reconcile. What differs is where mistakes are caught. Sorting that out honestly turned out to be most of the design work, and the repo keeps the answer as a table:
+The loop itself is Terraform's: observe, diff, reconcile. What differs is where the mistakes are caught. Working that out turned out, to my mild surprise, to be most of the design effort, and the repository keeps the answer in a table:
 
 :::pipeTable "Mistake | Caught | How\n---|---|---\nA reference to a resource that does not exist | compile time | there is nothing to write down: a reference can only be one of this file's own resources\nA resource that needs another and names none | compile time | the field has no default, so the resource is not finished without it\nUsing a service a cloud does not have | compile time | that cloud has no such resource type, so there is no name for it\nA plan whose shape depends on a value the cloud has not returned yet | compile time | the little expression language cannot branch on one\nAn instance size that does not exist | compile time | the compiler works out which sizes the family comes in, and checks\nA region a cloud is not in | compile time | the compiler works out which of your clouds have a region there\nA bucket name someone else already took | runtime | uniqueness is global, not a property of your file\nQuota, capacity, eventual consistency | runtime | not a property of the configuration at all"
 :::
@@ -47,13 +47,13 @@ Before the code, the short version of what this buys over HCL:
 :::pipeTable "| Terraform | infra\n---|---|---\nA reference | a string the graph resolves, typo caught at plan time | a value whose type carries the cloud and the kind, typo has no spelling\nA required reference | providers rarely enforce one, a missing field falls back to a default | no default exists, so the resource is a function still waiting for an argument\nOrdering | derived from expressions, `depends_on` by hand for the rest | derived from references, there is no `depends_on`\nRegion | a string per provider block, aliases for more than one | a place, mapped to each cloud's own code, one word places every cloud\nInstance type | a string | a family and a size, and the pair is checked\nSecrets | marked sensitive, redacted from output, written into state | a source, never a value, and no way to print one\nAn unknown deciding how many resources exist | a plan-time error you meet one attribute at a time | not expressible, so a plan is always computable\nYour own invariants | a separate linter, in another language, free to disagree | a Lean function the compiler runs while your file elaborates\nThe language | HCL | Lean, with its loops, functions, tests and abstraction\nProviders and ecosystem | thousands of resource types, modules, state locking, team workflow | fourteen kinds, three clouds, no registry"
 :::
 
-The last row is why you should use Terraform this week. The rest is what I think is worth stealing.
+The last row is why you should still use Terraform this week. The rest, I think, is worth stealing.
 
 # Side by side
 
 ## A reference that cannot dangle
 
-The right-hand pane below is not my invention. `toHcl` in the repo generates it from the fleet on the left, and I only aligned the `=` signs.
+The right-hand pane below is not my invention. `toHcl` in the repo generates it from the fleet on the left; I confess only to aligning the `=` signs.
 
 :::sideBySide "infra (Lean)" "fleet webTier in paris where\n  resource aws securityGroup \"web\" as web\n    { description := \"http and https, ssh from nowhere\" }\n\n  resource aws awsInstance \"web-1\"\n    { imageId       := \"ami-0123456789abcdef0\"\n    , instanceType  := InstanceType.of .t3 .nano\n    , securityGroup := web }" "main.tf (generated by toHcl)" "provider \"aws\" {\n  region = \"eu-west-3\"\n}\n\nresource \"aws_security_group\" \"web\" {\n  name        = \"web\"\n  description = \"http and https, ssh from nowhere\"\n  region      = \"eu-west-3\"\n}\n\nresource \"aws_instance\" \"web-1\" {\n  ami                    = \"ami-0123456789abcdef0\"\n  instance_type          = \"t3.nano\"\n  vpc_security_group_ids = [aws_security_group.web.id]\n  region                 = \"eu-west-3\"\n}"
 :::
@@ -154,7 +154,7 @@ The second is the one worth having. Wrapping the literal in a `map`, so it is no
 
 # Dependencies you do not declare
 
-This is the part I would put in a real tool first, because it is where the two tools diverge most and it has nothing to do with catching errors.
+This is the part I would carry into a real tool first, because it is where the two diverge most, and none of it has to do with catching errors.
 
 Some of what you declare does not exist yet: an endpoint the cloud assigns, a password you generate. Here a declaration can hold a recipe for such a value, and the shorthand looks like ordinary string interpolation:
 
@@ -278,7 +278,7 @@ That is the compiler quoting my own check back at me, with my own file substitut
 
 *A half-built resource is not a value.* A required field has no default and cannot be left unset, so a half-built resource is not an object with nulls in it. It is a function still waiting for an argument, which is why a missing security group reads as a type mismatch about a function. That is the shift I would keep, and it is not "the type system rejects bad configurations". It is that the set of things you can write can be made close to the set of things you could deploy.
 
-One detail I think is load-bearing for anyone trying this: none of it is worth much if a stale table blocks you, and these tables are snapshots of catalogues that grow. `Region.raw` and `InstanceType.raw` take a string on trust, so falling behind a provider costs a more conspicuous spelling rather than a wall. Get that wrong and the first missing region turns the type system into the enemy.
+One detail I believe is load-bearing for anyone attempting this: none of it is worth much if a stale table stands in the way, and these tables are snapshots of catalogues that keep growing. `Region.raw` and `InstanceType.raw` take a string on trust, so falling behind a provider costs a somewhat conspicuous spelling rather than a wall. Get that wrong, and the first missing region turns the type system into an adversary.
 
 # Being fair about it
 
@@ -286,7 +286,13 @@ What runs: five declarations in sequence, in CI, on all three clouds. Twelve res
 
 What does not: managed Postgres, which takes longer to create than a CI step allows. And plenty of `update` paths, since the ones that run are the ones the ramp moves.
 
-Not everything here is ahead of Terraform either. Deleting a resource from the file destroys it, which Terraform has always done, and getting there took two mistakes worth more than the feature. Something has to remember a resource after its line is gone. I put that record in git first, reasoning that what a fleet manages is intent. It is not. A row appears because a resource *was created*, an event at apply time on whatever machine ran the apply. That is why Terraform's state is remote and not committed, and I had to rediscover it. Then the record turned out to learn about a resource only through an *action*, so one that already existed and already matched was never recorded and could never be destroyed. Types helped with neither: both are questions about what happened, not about what is well-formed.
+Not everything here is ahead of Terraform either. Deleting a resource from the file destroys it, which Terraform has always done.
+
+The mechanism is a ledger: a local, gitignored JSON file recording one row per resource `infra` believes it owns — cloud, kind, name, region. It plays the part Terraform's state file plays, but for a narrower question. Not "what does the cloud contain" — a plan already lists that fresh on every run — but "what am I responsible for destroying if its line disappears." A row records that a resource *was created*, an event that happened on whichever machine ran the apply, which is why the ledger stays local and out of git rather than versioned with the declaration — the same reason Terraform's own state is conventionally kept remote and never committed, even though its default backend is local.
+
+A row is written the moment an apply creates, updates or replaces a resource, and dropped the moment one is deleted or forgotten. Because the ledger learns about a resource only through such an action, `infra` runs an adoption pass before every apply: any declared resource already present in the cloud but missing from the ledger is claimed on sight, using the same convergence check the planner runs to decide nothing needs doing. Without it, a resource that already matched the file on its very first run would converge silently, produce no action, enter no row, and so could never later be destroyed by deleting its line.
+
+Scope follows directly from the ledger. A resource `infra` has never recorded, it will never touch. A resource it has recorded and then lost track of — a wiped `.infra/` directory, say — is not rediscovered, only abandoned. A tag-based ownership model is sketched in the repo for that case, but nothing writes the tag yet, so today the ledger is the only boundary there is. Types help with neither question: both are about what happened on some past machine, not about what is well-formed on this one.
 
 Nor is any of that what types are for. My favourite failure from the live runs:
 
@@ -306,8 +312,8 @@ The scale gap is the real answer to "should you use this". Fourteen resource kin
 
 On the original question, iterating faster: yes, and not in the way I expected. The compile-time checks are satisfying but they fire once each. What actually changed the loop is that a broken configuration usually has no spelling, so the file I am editing is either wrong in a way the editor underlines immediately or right in a way that reaches an apply. There is very little middle ground where something plausible sits waiting to fail after the fourth resource. That middle ground is where Terraform time goes.
 
-It also made the AI part work. Two weekends and 18,000 lines is not me typing. Most of it was written in a loop where an agent proposes and the compiler judges, and the reason that loop converges is that the types carry the intent. When I say a reference must be a security group in this fleet, that is not a comment an agent can drift from, it is a constraint the next suggestion has to satisfy. The tighter the types, the less review the code needs, which is the opposite of what type systems are usually sold as costing.
+It is also what made the AI collaboration work. Two weekends and 18,000 lines were not typed by me, mostly. Most of it was written in a loop where an agent proposes and the compiler judges, and the reason that loop converges is that the types carry the intent. When I say a reference must be a security group in this fleet, that is not a comment an agent may quietly drift from — it is a constraint the next suggestion must satisfy. The tighter the types, the less review the code needs, which is the opposite of what type systems are usually sold as costing.
 
-What I would carry into a real tool is narrower than the tool. Make the desired state a value whose type is narrow enough that undeployable configurations are hard to write. Let references be typed indices into the declaration, so ordering is derived and `depends_on` never exists. Let the compiler run your own checks rather than maintaining a linter that can disagree with them. And give every lookup table a deliberately ugly way out. Almost all of the rest of those 18,000 lines are HTTP clients, and they are the part with bugs.
+What I would carry into a real tool is narrower than the tool. Make the desired state a value whose type is narrow enough that undeployable configurations are hard to write. Let references be typed indices into the declaration, so ordering is derived and `depends_on` never exists. Let the compiler run your own checks rather than maintaining a linter that can disagree with them. And give every lookup table a deliberately ugly way out. Almost all of the remaining 18,000 lines are HTTP clients — and, predictably enough, that is where the bugs live.
 
 The code is at [github.com/typednotes/infra](https://github.com/typednotes/infra), and `docs/coverage.md` is the honest account of how far it has been run, including the embarrassing parts.
