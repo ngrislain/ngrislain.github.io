@@ -41,6 +41,9 @@
     },
     "blog/2026-9-6-terraform-in-lean-4-if-it-compiles-it-will-likely-deploy": {
       "content_hash": "2c58e1dab2253ac4"
+    },
+    "blog/2026-9-6-like-terraform-but-in-lean-4": {
+      "content_hash": "629198ad591b58c6"
     }
   }
 }
