@@ -12,11 +12,11 @@ h1 span{font-family:var(--mono);font-weight:700}
 .sub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
 .cols{display:flex;gap:22px;flex:1;min-height:0;align-items:stretch}
 pre{margin:0;background:#fff;border:1px solid var(--rule);border-radius:6px;
-  padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;
+  padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.5;
   flex:1 1 640px;min-width:0;overflow:hidden;color:var(--ink)}
-figure{margin:0;flex:0 0 430px;background:#fff;border:1px solid var(--rule);
+figure{margin:0;flex:0 0 300px;background:#fff;border:1px solid var(--rule);
   border-radius:6px;display:flex;align-items:center;justify-content:center;padding:8px}
-figure img{width:100%;height:auto}
+figure img{max-width:100%;max-height:100%;width:auto;height:auto}
 .k{color:var(--kw);font-weight:600}.s{color:var(--str)}.f{color:var(--fld)}
 .n{color:var(--fn)}.p{color:var(--pun)}
 .h1x{background:#fef3c7;border-radius:3px;padding:0 2px}
@@ -27,19 +27,22 @@ figure img{width:100%;height:auto}
 </style></head><body>
 
 <h1><span>infra</span>: infrastructure as code in Lean 4</h1>
-<p class="sub">One apply, not two: a secret composed from a generated password and an endpoint the cloud has not assigned yet.</p>
+<p class="sub">One apply, four resources, no <code>depends_on</code>: a required reference and two addresses the cloud has not assigned yet, and the order falls out of both.</p>
 
 <div class="cols">
-<pre><span class="k">fleet</span> connected <span class="k">where</span>
-  <span class="k">resource</span> scaleway secrets <span class="s">"db-password"</span> <span class="k">as</span> pw
-    <span class="p">{</span> <span class="f">valueFrom</span> <span class="p">:=</span> <span class="n">fromEnv</span> <span class="s">"DB_PASSWORD"</span> <span class="p">}</span>
-  <span class="k">resource</span> scaleway postgres <span class="s">"main"</span> <span class="k">as</span> db
-    <span class="p">{</span> <span class="f">masterUsername</span> <span class="p">:=</span> <span class="s">"dbadmin"</span><span class="p">,</span> <span class="f">maxCapacity</span> <span class="p">:=</span> 4 <span class="p">}</span>
-  <span class="k">resource</span> scaleway secrets <span class="s">"db-url"</span>
-    <span class="p">{</span> <span class="f">valueFrom</span> <span class="p">:=</span> <span class="n">composed</span>
-        <span class="n">expr!</span><span class="s">"postgres://{</span><span class="h1x">secretValueOf pw</span><span class="s">}@{</span><span class="h2x">endpointOf db</span><span class="s">}/main"</span> <span class="p">}</span></pre>
+<pre><span class="k">fleet</span> cluster <span class="k">in</span> paris <span class="k">where</span>
+  <span class="k">resource</span> aws securityGroup <span class="s">"web"</span> <span class="k">as</span> web
+    <span class="p">{</span> <span class="f">description</span> <span class="p">:=</span> <span class="s">"http and https, ssh from nowhere"</span> <span class="p">}</span>
+  <span class="k">resource</span> aws awsInstance <span class="s">"app-1"</span> <span class="k">as</span> app1
+    <span class="p">{</span> <span class="f">imageId</span> <span class="p">:=</span> <span class="s">"latest"</span><span class="p">,</span> <span class="f">instanceType</span> <span class="p">:=</span> <span class="n">InstanceType.of</span> .t3 .nano
+    <span class="p">,</span> <span class="f">securityGroup</span> <span class="p">:=</span> <span class="h2x">web</span> <span class="p">}</span>
+  <span class="k">resource</span> aws awsInstance <span class="s">"app-2"</span> <span class="k">as</span> app2
+    <span class="p">{</span> <span class="f">imageId</span> <span class="p">:=</span> <span class="s">"latest"</span><span class="p">,</span> <span class="f">instanceType</span> <span class="p">:=</span> <span class="n">InstanceType.of</span> .t3 .nano
+    <span class="p">,</span> <span class="f">securityGroup</span> <span class="p">:=</span> <span class="h2x">web</span> <span class="p">}</span>
+  <span class="k">resource</span> aws secrets <span class="s">"cluster-peers"</span>
+    <span class="p">{</span> <span class="f">valueFrom</span> <span class="p">:=</span> <span class="n">composed</span> <span class="n">expr!</span><span class="s">"{</span><span class="h1x">privateIpOf app1</span><span class="s">},{</span><span class="h1x">privateIpOf app2</span><span class="s">}"</span> <span class="p">}</span></pre>
 
-<figure><img src="dag.svg" alt="db-password and postgres main both feed db-url"></figure>
+<figure><img src="dag.svg" alt="the web security group feeds both app-1 and app-2, which both feed the cluster-peers secret"></figure>
 </div>
 
 <p class="note"><b>fleet</b> webTier <b>in</b> warsaw <b>where</b> …

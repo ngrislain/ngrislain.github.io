@@ -1,0 +1,18 @@
+digraph ClusterPeers {
+  rankdir=TB;
+  bgcolor="white";
+  nodesep=0.35;
+  ranksep=0.65;
+  node [shape=box style="rounded,filled" fontname="Menlo" fontsize=11 margin="0.14,0.10" penwidth=1.6];
+  edge [color="#94a3b8" penwidth=1.5 fontname="Menlo" fontsize=10.5 fontcolor="#64748b" arrowsize=0.8];
+
+  web [label=<<b>securityGroup</b><br/>&quot;web&quot;> fillcolor="#fef3c7" color="#d97706" fontcolor="#78350f"];
+  app1 [label=<<b>awsInstance</b><br/>&quot;app-1&quot;<br/><font point-size="9" color="#1d4ed8">privateIp from the cloud</font>> fillcolor="#eff6ff" color="#3b82f6" fontcolor="#1e3a8a"];
+  app2 [label=<<b>awsInstance</b><br/>&quot;app-2&quot;<br/><font point-size="9" color="#1d4ed8">privateIp from the cloud</font>> fillcolor="#eff6ff" color="#3b82f6" fontcolor="#1e3a8a"];
+  peers [label=<<b>secrets</b><br/>&quot;cluster-peers&quot;<br/><font point-size="9" color="#15803d">composed</font>> fillcolor="#f0fdf4" color="#16a34a" fontcolor="#14532d"];
+
+  web -> app1 [label="securityGroup"];
+  web -> app2 [label="securityGroup"];
+  app1 -> peers [label="observedOf"];
+  app2 -> peers [label="observedOf"];
+}
