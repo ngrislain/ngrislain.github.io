@@ -53,7 +53,7 @@ The last row is why you should still use Terraform this week. The rest, I think,
 
 ## A reference that cannot dangle
 
-The right-hand pane below is the Terraform you would write for the same infrastructure, and I only aligned the `=` signs.
+The right-hand pane below is the Terraform you would write for the same infrastructure.
 
 :::sideBySide "infra (Lean)" "fleet webTier in paris where\n  resource aws securityGroup \"web\" as web\n    { description := \"http and https, ssh from nowhere\" }\n\n  resource aws awsInstance \"web-1\"\n    { imageId       := \"ami-0123456789abcdef0\"\n    , instanceType  := InstanceType.of .t3 .nano\n    , securityGroup := web }" "main.tf (HCL)" "provider \"aws\" {\n  region = \"eu-west-3\"\n}\n\nresource \"aws_security_group\" \"web\" {\n  name        = \"web\"\n  description = \"http and https, ssh from nowhere\"\n  region      = \"eu-west-3\"\n}\n\nresource \"aws_instance\" \"web-1\" {\n  ami                    = \"ami-0123456789abcdef0\"\n  instance_type          = \"t3.nano\"\n  vpc_security_group_ids = [aws_security_group.web.id]\n  region                 = \"eu-west-3\"\n}"
 :::
@@ -317,33 +317,13 @@ What the live run in CI actually exercises, and what it leaves out:
 :::pipeTable "Covered | Not covered\n---|---\nAll three clouds: twelve resources on AWS, twelve on Scaleway, ten on Google Cloud, across thirteen of the fourteen kinds | Managed Postgres, which takes longer to create than a CI step allows\nFive stages in sequence: the whole fleet, the same fleet scaled up, scaled back down, a version with two resources dropped, then one that declares nothing | Most `update` paths: only the ones this five-stage ramp happens to move through are exercised\nAfter every stage, the account must hold exactly what that stage declares: a resource whose line is gone is destroyed rather than abandoned, and a container scaled to a floor of zero instances actually scales back | Everything else about correctness that isn't reachable by shrinking and regrowing one fleet across five stages"
 :::
 
-Deleting a line is where the two tools are most alike in effect and least alike in machinery, and it is worth being plain about rather than scoring. Both need to answer one question: after its line is gone, is this resource mine to destroy or a stranger's to leave alone? Terraform answers from state, a remote file listing what it created. Here the answer comes from a local, gitignored ledger, one row per resource an apply created, and the row is what outlives the line.
+Deleting a line is where the two tools are most alike in effect and least alike in machinery. Both need to answer one question: after its line is gone, is this resource mine to destroy or a stranger's to leave alone? Terraform answers from state, a remote file listing what it created. Here the answer comes from a marker tag written onto everything the tool creates, checked against an account boundary and a human-maintained exclusion list — ownership as a property of the resource, not an entry in a file on my laptop.
 
-The record stays out of git, and that is the one thing I got wrong first and would tell anyone building this. A row appears because a resource *was created*, an event on whichever machine ran the apply, not a statement of intent. Intent is the declaration; membership is a consequence of applying it. Commit the record and CI has to write it back to the branch, which needs push permissions, races with concurrent merges, and loops unless guarded. Terraform keeps state remote for the same reason, and I rediscovered it the slow way.
+A local, gitignored ledger caches that answer, one row per resource, so an apply does not have to ask the cloud what it owns every time it runs. Committing that cache instead, which I tried first, was the actual mistake: a row appears because a resource *was created*, an event on whichever machine ran the apply, not a statement of intent. Writing that back to a shared branch needs push permissions, races with concurrent merges, and a loop unless carefully guarded. Terraform keeps state remote for the same reason, and I rediscovered it the slow way. Losing the cache costs nothing now but a moment's wait — a `discover` command rebuilds it by reading the marker straight back off the account.
 
-The direction of the check is the part I would defend. A ledger is a list of what to *include*, and the two directions fail very differently: a lost row means something keeps running untracked and costs money until someone notices, while a missing entry on a list of what to *avoid* means deleting a stranger's database. So nothing is claimed that cannot be pointed at a row, and pointed at an account full of somebody else's work the tool proposes no deletions at all.
+The direction of the check is what I would defend regardless of storage. It is a list of what to *include*, and the two directions fail very differently: losing it means something keeps running untracked and costs money until someone notices, while a false include on a list of what to *avoid* means deleting a stranger's database. The marker only ever grants; the exclusion list only ever takes away.
 
-The price is that the rows are the only record there is. Wipe them and the resources whose lines you already deleted can never be named again, and there is nothing on the resources themselves to sweep for. The repo's answer, written and unit-checked but not yet wired into the providers, is to stop keeping ownership in a file on my laptop and make it a property of the resource:
-
-- a *realm*, one account per cloud, checked before anything is touched, and the only piece live today;
-- a *marker*, a tag written onto everything the tool creates, and the only thing that grants ownership;
-- an *exclusion list* of resources to leave alone whatever their tags say, plus a creation-date *cutoff* that treats anything older than the day management started as pre-existing.
-
-The marker grants and the exclusions only ever take away, which is what keeps a missing entry from being the expensive kind of mistake.
-
-None of that is what types are for. Ownership is a question about what happened on some past machine, not about what is well-formed on this one.
-
-My favourite failure from the live runs makes the same point from the other side:
-
-```
-InvalidParameterValue: Invalid security group description. Valid
-descriptions are strings less than 256 characters from the following
-set:  a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*
-```
-
-The description was "created and destroyed by infra's live test". An apostrophe is not in that set. Since descriptions are constants in the file, that would have failed every apply, for ever. Checking a character set is exactly what the compiler can do, and it does now. But I would never have thought to write it. A type system checks the constraints you know about, and the list of ones you do not is longer.
-
-And some things stay at runtime whatever you do: whether a bucket name is globally unique, whether your quota covers the instance, whether the cloud has caught up with itself.
+None of that is what types are for. Ownership is a question about what happened on some past machine, not about what is well-formed on this one — and some things stay at runtime whatever you do: whether a bucket name is globally unique, whether your quota covers the instance, whether the cloud has caught up with itself.
 
 The scale gap is the real answer to "should you use this". Fourteen resource kinds against Terraform's thousands, three clouds instead of hundreds of providers. No module registry, no state locking, no team workflow. If you need to ship infrastructure this week, use Terraform.
 
