@@ -13,7 +13,7 @@ date := { year := 2026, month := 09, day := 06 }
 :::hero "A fleet declaration and the dependency graph it produces" "static/blog/infra-lean/thumbnail.png"
 :::
 
-I spent two weekends building [infra](https://github.com/typednotes/infra), an infrastructure-as-code tool in Lean 4. It does what Terraform does: you declare the resources you want, it reads what your cloud accounts actually contain, and it reconciles the difference. Three clouds, fourteen resource kinds, about 18,000 lines of Lean, 126 commits.
+I spent two weekends building [infra](https://github.com/typednotes/infra), an infrastructure-as-code tool in Lean 4. It does what Terraform does: you declare the resources you want, it reads what your cloud accounts actually contain, and it reconciles the difference. Three clouds, fourteen resource kinds, about 19,000 lines of Lean, 143 commits.
 
 It was an experiment with one question behind it. How many of the mistakes you normally discover halfway through an `apply` can be moved into the compiler, if the compiler has dependent types? And does that actually make the loop faster, or does it just move the pain earlier?
 
@@ -25,9 +25,12 @@ Here is a complete deployment:
 fleet exampleQueue in paris where
   resource scaleway queues "infra-example"
     { visibilityTimeoutSec := 30 }
+
+def main (args : List String) : IO UInt32 :=
+  Infra.Cli.run "example-queue" exampleQueue (args := args)
 ```
 
-That is the entire file, plus a one-line `main`. And here is the detail I did not expect to enjoy quite so much: `in paris` could just as well be `in warsaw`, and it would still compile. In the file next door, which declares resources on both AWS and Scaleway, `in warsaw` is a compile error, because AWS has no region in Warsaw. Same word, same syntax — whether it is legal depends on the rest of the file.
+That is the entire file. `fleet` turns the declaration into a value called `exampleQueue`, which carries the key family, the target state, the placement and anything the fleet has released. The front end takes that one value, so there is no second copy of any of it to keep in step. And here is the detail I did not expect to enjoy quite so much: `in paris` could just as well be `in warsaw`, and it would still compile. In the file next door, which declares resources on both AWS and Scaleway, `in warsaw` is a compile error, because AWS has no region in Warsaw. Same word, same syntax — whether it is legal depends on the rest of the file.
 
 # Where the mistakes are caught
 
