@@ -320,6 +320,8 @@ private def category : Template := do
 
 private def archiveEntry : Template := do
   let post : BlogPost ← param "post"
+  -- Verso skips a draft's page but still passes it to the listing; keep drafts off the index too.
+  if post.contents.metadata.map (·.draft) == some true then return .empty
   let summary ← param "summary"
   let target ←
     if let some p := (← param? (α := String) "path") then

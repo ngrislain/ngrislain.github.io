@@ -20,6 +20,15 @@ import Site.Blog.NTK
 import Site.Blog.Reservoir
 import Site.Blog.AnomalyDetection
 import Site.Blog.InfraLean
+import Site.Blog.DeepSeekV41.Part1
+import Site.Blog.DeepSeekV41.Part2
+import Site.Blog.DeepSeekV41.Part3
+import Site.Blog.DeepSeekV41.Part4
+import Site.Blog.DeepSeekV41.Part5
+import Site.Blog.DeepSeekV41.Part6
+import Site.Blog.DeepSeekV41.Part7
+import Site.Blog.DeepSeekV41.Part8
+import Site.Blog.DeepSeekV41.Part9
 
 open Verso Genre Blog Site Syntax
 
@@ -28,6 +37,15 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
+      Site.Blog.DeepSeekV41.Part9
+      Site.Blog.DeepSeekV41.Part8
+      Site.Blog.DeepSeekV41.Part7
+      Site.Blog.DeepSeekV41.Part6
+      Site.Blog.DeepSeekV41.Part5
+      Site.Blog.DeepSeekV41.Part4
+      Site.Blog.DeepSeekV41.Part3
+      Site.Blog.DeepSeekV41.Part2
+      Site.Blog.DeepSeekV41.Part1
       Site.Blog.InfraLean
       Site.Blog.AnomalyDetection
       Site.Blog.Reservoir

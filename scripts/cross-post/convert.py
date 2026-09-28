@@ -81,6 +81,18 @@ IFRAME_SCREENSHOTS = {
     "signature-method/signature-explorer.html": "signature-method/thumbnail.png",
     "prefix-scan/blelloch.html": "prefix-scan/blelloch-screenshot.png",
     "prefix-scan/blelloch-strings.html": "prefix-scan/blelloch-screenshot.png",
+    # DeepSeek-V4.1 series: one widget per iframe, picked by the URL hash (no id is a substring of another)
+    **{f"deepseek-v41/widgets.html#{wid}": f"deepseek-v41/{img}" for wid, img in {
+        "map": "fig-map.png", "kvcache": "fig-kvcache.png",
+        "hc": "fig-hc.png", "sinkhorn": "fig-sinkhorn.png", "singlepass": "fig-singlepass.png",
+        "moe": "fig-moe.png", "balance": "fig-balance.png",
+        "muon": "fig-muon.png", "sinkgd": "fig-sinkgd.png",
+        "swa": "fig-swa.png", "compress": "fig-compress.png", "indexer": "fig-indexer.png", "csa-v4": "fig-csa.png",
+        "csa2-modes": "fig-csa2-modes.png", "hsi": "fig-hsi.png", "fp4": "fig-fp4.png", "kv-budget": "fig-kv-budget.png",
+        "ced": "fig-ced.png", "replay": "fig-replay.png",
+        "engram": "fig-engram.png", "dspark": "fig-dspark.png", "vision": "fig-vision.png",
+        "zoom": "hero-9-zoomout.png",
+    }.items()},
 }
 
 
