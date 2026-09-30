@@ -8,14 +8,12 @@ namespace Site.OgMeta
 
 private def siteUrl : String := "https://ngrislain.github.io"
 
+/-- Character index of the first occurrence of `sub` in `s`. Linear time
+    (a naive `drop i` loop is quadratic and hangs on large files). -/
 private def findSubstr (s : String) (sub : String) : Option Nat :=
-  let sLen := s.length
-  let subLen := sub.length
-  if subLen > sLen then none
-  else Id.run do
-    for i in [:sLen - subLen + 1] do
-      if ((s.drop i).take subLen).toString == sub then return some i
-    return none
+  match s.splitOn sub with
+  | first :: _ :: _ => some first.length
+  | _ => none
 
 /-- Extract the src of the first <img in post-content div. -/
 private def extractImage (html : String) : Option String := do
