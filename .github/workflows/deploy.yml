@@ -47,7 +47,7 @@ jobs:
       - name: Build site
         run: |
           set -eux
-          lake update
+          lake build ngrislain-github-io
           lake exe ngrislain-github-io --output build
 
       - name: Upload artifact
