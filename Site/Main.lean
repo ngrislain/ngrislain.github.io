@@ -10,6 +10,7 @@ import Site.Projects.Adventure
 import Site.Projects.AIEconomics
 import Site.Projects.TypeDrivenDev
 import Site.Projects.ConstrainedData
+import Site.Projects.RGBByEye
 import Site.Blog
 import Site.Embed
 import Site.Blog.PrefixScan
@@ -55,6 +56,7 @@ def personalSite : Site :=
       Site.Blog.SocketStateMachine
       Site.Blog.PrefixScan
     "projects" Site.Projects with
+      Site.Projects.RGBByEye
       Site.Projects.ConstrainedData
       Site.Projects.TypeDrivenDev
       Site.Projects.AIEconomics
