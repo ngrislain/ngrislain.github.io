@@ -10,6 +10,8 @@ authors := ["Nicolas Grislain"]
 date := { year := 2026, month := 03, day := 25 }
 %%%
 
+*Correction (November 2026).* The original handle types check the tag on the value passed to each call. An earlier alias keeps its tag, so closing the same socket twice can type-check. The claims below about preventing double close need that qualification. Proof erasure alone also doesn't establish the runtime cost of the API. See [Why Lean let me close a socket twice](/blog/2026-11-26-why-lean-let-me-close-a-socket-twice/) for the counterexample, the scoped implementation, and the peer-close test.
+
 :::hero "Socket state machine" "static/blog/socket-state-machine/hero.png"
 :::
 

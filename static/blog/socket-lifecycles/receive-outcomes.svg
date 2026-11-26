@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="426" viewBox="0 0 700 426" role="img" aria-labelledby="title desc">
+  <title id="title">The receive result selects the handler’s state</title>
+  <desc id="desc">recvOrClose starts with a connected socket and observes the OS result. Data and wouldBlock leave the socket connected. EOF after peer FIN, or a receive error such as a peer reset, causes the interpreter to close the local socket before calling the closed continuation.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1L9 5 1 9" fill="none" stroke="#365a56" stroke-width="1.6"/>
+    </marker>
+    <marker id="closeArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1L9 5 1 9" fill="none" stroke="#873e32" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="1" y="1" width="698" height="424" rx="15" fill="#fbfaf5" stroke="#c8d1ca"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#213437">
+    <rect x="37" y="28" width="626" height="61" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <text x="55" y="54" font-size="20" font-weight="700">Start in .connected</text>
+    <text x="55" y="76" font-size="17" fill="#425759">recvOrClose attempts a read and observes the OS result.</text>
+    <text x="40" y="122" font-size="18" font-weight="700">Observed result</text>
+    <text x="456" y="122" font-size="18" font-weight="700">Handler starts in</text>
+    <g stroke-width="1.2">
+      <rect x="37" y="143" width="220" height="52" rx="8" fill="#fff" stroke="#9aaba5"/>
+      <rect x="37" y="207" width="220" height="52" rx="8" fill="#fff" stroke="#9aaba5"/>
+      <rect x="37" y="286" width="220" height="52" rx="8" fill="#fff" stroke="#9aaba5"/>
+      <rect x="37" y="350" width="220" height="52" rx="8" fill="#fff" stroke="#9aaba5"/>
+      <rect x="452" y="157" width="211" height="84" rx="10" fill="#e5efeb" stroke="#176f68"/>
+      <rect x="452" y="302" width="211" height="84" rx="10" fill="#f6eae2" stroke="#873e32"/>
+    </g>
+    <g font-family="Menlo, Consolas, monospace" font-size="18" font-weight="700">
+      <text x="52" y="165">.data bytes</text>
+      <text x="52" y="229">.wouldBlock</text>
+      <text x="52" y="308">.eof</text>
+      <text x="52" y="372">.error err</text>
+    </g>
+    <g font-size="16" fill="#425759">
+      <text x="52" y="184">Peer sent bytes</text>
+      <text x="52" y="248">No bytes ready yet</text>
+      <text x="52" y="327">Peer finished sending</text>
+      <text x="52" y="391">For example, peer reset</text>
+    </g>
+    <g fill="none" stroke="#365a56" stroke-width="1.8">
+      <path d="M258 169H284V232H258"/>
+      <path d="M284 200H446" marker-end="url(#arrow)"/>
+    </g>
+    <g fill="none" stroke="#873e32" stroke-width="1.8">
+      <path d="M258 312H284V376H258"/>
+      <path d="M284 344H446" marker-end="url(#closeArrow)"/>
+    </g>
+    <g text-anchor="middle">
+      <text x="365" y="187" fill="#365a56" font-size="16">Keep it open</text>
+      <text x="365" y="329" fill="#873e32" font-size="16">Close it first</text>
+      <text x="558" y="194" fill="#17635c" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">.connected</text>
+      <text x="558" y="219" fill="#425759" font-size="16">Can attempt socket I/O</text>
+      <text x="558" y="339" fill="#873e32" font-family="Menlo, Consolas, monospace" font-size="22" font-weight="700">.closed</text>
+      <text x="558" y="364" fill="#425759" font-size="16">No socket operations</text>
+    </g>
+  </g>
+</svg>

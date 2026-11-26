@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="475" viewBox="0 0 700 475" role="img" aria-labelledby="title desc">
+  <title id="title">Linen’s scoped socket state machine</title>
+  <desc id="desc">A runner owns a fresh socket. The server path binds, then listens. Accept opens a separate connected child that must close while the listener stays listening. The client path connects directly or enters connecting while a non-blocking connect is pending. A successful connectFinish enters connected. Close is available from any live state and consumes it.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1L9 5 1 9" fill="none" stroke="#365a56" stroke-width="1.6"/>
+    </marker>
+    <marker id="closeArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1L9 5 1 9" fill="none" stroke="#873e32" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="1" y="1" width="698" height="473" rx="15" fill="#fbfaf5" stroke="#c8d1ca"/>
+  <g fill="none" stroke="#365a56" stroke-width="1.9" marker-end="url(#arrow)">
+    <path d="M313 77V115H125V151"/>
+    <path d="M387 77V115H492V151"/>
+    <path d="M420 52H651V286H578"/>
+    <path d="M125 207V254"/>
+    <path d="M492 207V254"/>
+    <path d="M125 311V371" stroke-dasharray="5 4"/>
+  </g>
+  <path d="M492 311V376" fill="none" stroke="#873e32" stroke-width="1.9" marker-end="url(#closeArrow)"/>
+  <g stroke-width="1.2">
+    <rect x="280" y="28" width="140" height="48" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <rect x="47" y="155" width="156" height="51" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <rect x="414" y="155" width="156" height="51" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <rect x="47" y="258" width="156" height="52" rx="9" fill="#e5efeb" stroke="#176f68"/>
+    <rect x="414" y="258" width="156" height="52" rx="9" fill="#e5efeb" stroke="#176f68"/>
+    <rect x="47" y="375" width="277" height="84" rx="9" fill="#e5efeb" stroke="#176f68" stroke-dasharray="5 4"/>
+    <rect x="414" y="380" width="156" height="54" rx="9" fill="#f6eae2" stroke="#873e32"/>
+  </g>
+  <g font-family="Menlo, Consolas, monospace" text-anchor="middle" fill="#213437" font-size="21" font-weight="700">
+    <text x="350" y="59">.fresh</text>
+    <text x="125" y="187">.bound</text>
+    <text x="492" y="187">.connecting</text>
+    <text x="125" y="291" fill="#17635c">.listening</text>
+    <text x="492" y="291" fill="#17635c">.connected</text>
+    <text x="492" y="414" fill="#873e32">.closed</text>
+  </g>
+  <g font-family="Menlo, Consolas, monospace" font-size="16" fill="#365a56">
+    <text x="209" y="104" text-anchor="middle">bindAddress</text>
+    <text x="445" y="104" text-anchor="middle">connectNB</text>
+    <text x="565" y="42" text-anchor="middle">connect</text>
+    <text x="137" y="238">listen</text>
+    <text x="505" y="229">connectFinish</text>
+    <text x="137" y="346">withAccepted</text>
+    <text x="506" y="343" fill="#873e32">close</text>
+  </g>
+  <g font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#425759">
+    <text x="506" y="123">pending</text>
+    <text x="631" y="73" text-anchor="end">or immediate</text>
+    <text x="631" y="93" text-anchor="end">connectNB success</text>
+    <text x="505" y="247">when it succeeds</text>
+    <text x="506" y="363" fill="#873e32">from any live state</text>
+    <text x="62" y="402" fill="#17635c" font-size="18" font-weight="700">Separate child scope</text>
+    <text x="62" y="427">Child runs connected → closed.</text>
+    <text x="62" y="448">Listener stays listening.</text>
+    <text x="492" y="460" text-anchor="middle">No further socket operations.</text>
+  </g>
+</svg>
