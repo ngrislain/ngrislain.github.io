@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="589" viewBox="0 0 1000 589" role="img" aria-labelledby="title desc">
+  <title id="title">What runs when you use cmux SSH</title>
+  <desc id="desc">The Mac connects over SSH. On the remote host, a bridge connects to a background cmuxd-remote daemon that owns the terminal. The remote shell can run an agent directly or attach to a separate tmux or Herdr server.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse">
+      <path d="M1 1 6 4 1 7" fill="none" stroke="#426cae" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="589" rx="24" fill="#f2f5fb"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#142744">
+    <text x="42" y="67" font-size="35" font-weight="700">What runs when you use cmux SSH</text>
+    <rect x="42" y="112" width="262" height="236" rx="16" fill="#e1e8f5"/>
+    <text x="62" y="153" font-size="22" font-weight="700">Mac</text>
+    <rect x="62" y="176" width="222" height="119" rx="12" fill="#fff" stroke="#b4c3df"/>
+    <text x="80" y="220" font-size="24" font-weight="700">cmux app</text>
+    <text x="80" y="254" fill="#344d73" font-size="19">Terminal and browser</text>
+
+    <text x="377" y="210" text-anchor="middle" fill="#36568f" font-size="21" font-weight="700">SSH</text>
+    <path d="M321 235H432" stroke="#426cae" stroke-width="2.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <text x="377" y="268" text-anchor="middle" fill="#344d73" font-size="17">Remote bridge</text>
+
+    <rect x="450" y="112" width="508" height="435" rx="16" fill="#e7f3ef"/>
+    <text x="470" y="153" font-size="22" font-weight="700">Remote host</text>
+    <rect x="470" y="176" width="468" height="106" rx="12" fill="#fff" stroke="#aec9be"/>
+    <text x="492" y="219" font-size="24" font-weight="700">cmuxd-remote</text>
+    <text x="492" y="252" fill="#37594d" font-size="19">Background daemon for this workspace</text>
+
+    <path d="M704 282V314" stroke="#426cae" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="470" y="320" width="468" height="78" rx="11" fill="#f9fdfb" stroke="#aec9be"/>
+    <text x="492" y="351" font-size="21" font-weight="700">Remote shell</text>
+    <text x="492" y="377" fill="#37594d" font-size="18">Runs the agent and commands on the host</text>
+
+    <path d="M704 398V440" stroke="#426cae" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+    <text x="721" y="426" fill="#36568f" font-size="17">Optional attach</text>
+    <rect x="470" y="446" width="468" height="78" rx="11" fill="#f9fdfb" stroke="#aec9be"/>
+    <text x="492" y="477" font-size="21" font-weight="700">tmux or Herdr server</text>
+    <text x="492" y="503" fill="#37594d" font-size="18">Holds its own agent and test terminals</text>
+  </g>
+</svg>
