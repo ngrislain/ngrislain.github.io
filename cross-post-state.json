@@ -53,6 +53,9 @@
     },
     "blog/2026-11-26-why-lean-let-me-close-a-socket-twice": {
       "content_hash": "205b99730b6bfcf8"
+    },
+    "blog/2026-11-26-running-coding-agents-in-cmux": {
+      "content_hash": "36369f22e2917351"
     }
   }
 }
