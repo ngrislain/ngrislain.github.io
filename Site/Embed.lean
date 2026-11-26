@@ -1,17 +1,18 @@
+import Lean.Data.Html
 import VersoBlog
 
 open Verso Genre Blog
-open Verso Output Html
+open Lean (Html)
 
 block_component +directive iframe (src : String) where
   toHtml _id _json _goI _goB _contents := do
-    pure {{
-      <iframe src={{src}}
+    pure html%{
+      <iframe src={src}
         style="width: 100%; height: 620px; border: 1px solid #e0e0e0; border-radius: 6px;"
         loading="lazy"
         allowfullscreen="true">
       </iframe>
-    }}
+    }
 
 /-- An iframe that grows to whatever height its page reports.
 
@@ -20,12 +21,12 @@ block_component +directive iframe (src : String) where
     used until the first message arrives, and if the page never posts one. -/
 block_component +directive figframe (src : String) (height : String) where
   toHtml _id _json _goI _goB _contents := do
-    pure {{
+    pure html%{
       <div class="figframe">
-        <iframe src={{src}} style={{s!"width:100%;height:{height}px;border:1px solid #e0e0e0;border-radius:6px;display:block"}}
+        <iframe src={src} style={s!"width:100%;height:{height}px;border:1px solid #e0e0e0;border-radius:6px;display:block"}
           loading="lazy" scrolling="no">
         </iframe>
-        <script>{{.text false "
+        <script>{.raw "
           if (!window.__figFrameWired) {
             window.__figFrameWired = true;
             window.addEventListener('message', function (event) {
@@ -36,17 +37,17 @@ block_component +directive figframe (src : String) (height : String) where
               });
             });
           }
-        "}}</script>
+        "}</script>
       </div>
-    }}
+    }
 
 block_component +directive hero (alt : String) (src : String) where
   toHtml _id _json _goI _goB _contents := do
-    pure {{
+    pure html%{
       <div class="hero-image">
-        <img src={{src}} alt={{alt}} />
+        <img src={src} alt={alt} />
       </div>
-    }}
+    }
 
 /-- Replace backtick-delimited spans with `<code>` tags. -/
 private def renderInlineCode (s : String) : String :=
@@ -79,7 +80,7 @@ private def parsePipeTable (src : String) : Html :=
       let tds := String.join (row.map fun c => s!"<td>{renderInlineCode c}</td>")
       s!"<tr>{tds}</tr>"
     let html := s!"<table><thead><tr>{th}</tr></thead><tbody>{String.join trs}</tbody></table>"
-    .text false html
+    .raw html
 
 /-- A pipe-delimited table. Pass the full table (header + separator + rows) as a string argument.
     Example: `:::pipeTable "Name | Value\n---|---\nfoo | 42"` -/
@@ -96,15 +97,15 @@ block_component +directive sideBySide
     (leftTitle : String) (leftCode : String)
     (rightTitle : String) (rightCode : String) where
   toHtml _id _json _goI _goB _contents := do
-    pure {{
+    pure html%{
       <div class="side-by-side">
         <figure>
-          <figcaption>{{leftTitle}}</figcaption>
-          <pre><code>{{leftCode}}</code></pre>
+          <figcaption>{leftTitle}</figcaption>
+          <pre><code>{leftCode}</code></pre>
         </figure>
         <figure>
-          <figcaption>{{rightTitle}}</figcaption>
-          <pre><code>{{rightCode}}</code></pre>
+          <figcaption>{rightTitle}</figcaption>
+          <pre><code>{rightCode}</code></pre>
         </figure>
       </div>
-    }}
+    }
