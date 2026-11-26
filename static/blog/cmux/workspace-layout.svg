@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="525" viewBox="0 0 1000 525" role="img" aria-labelledby="title desc">
+  <title id="title">A workspace for each task</title>
+  <desc id="desc">The parser fix is open, with Codex, a test shell and a browser side by side. A second workspace for Claude Code has an unread review notification.</desc>
+  <rect width="1000" height="525" rx="24" fill="#f2f5fb"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#142744">
+    <text x="42" y="63" fill="#36568f" font-size="18" font-weight="700">cmux on macOS</text>
+    <text x="42" y="109" font-size="37" font-weight="700">A workspace for each task</text>
+
+    <rect x="42" y="152" width="278" height="328" rx="16" fill="#e1e8f5"/>
+    <text x="62" y="191" font-size="22" font-weight="700">Sidebar</text>
+    <rect x="62" y="214" width="238" height="88" rx="10" fill="#21477f"/>
+    <text x="80" y="249" fill="#fff" font-size="23" font-weight="700">Parser fix</text>
+    <text x="80" y="278" fill="#e6eefc" font-size="18">Selected workspace</text>
+    <rect x="62" y="314" width="238" height="88" rx="10" fill="#fff" stroke="#b4c3df"/>
+    <text x="80" y="349" font-size="23" font-weight="700">Review change</text>
+    <circle cx="278" cy="342" r="8" fill="#a64f23"/>
+    <text x="80" y="378" fill="#83411e" font-size="18">Unread notification</text>
+
+    <path d="M321 257H350" stroke="#426cae" stroke-width="3"/>
+    <path d="M343 250 351 257 343 264" fill="none" stroke="#426cae" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="356" y="152" width="602" height="328" rx="16" fill="#fff" stroke="#b4c3df"/>
+    <text x="378" y="191" font-size="22" font-weight="700">Parser fix workspace</text>
+    <rect x="378" y="214" width="282" height="244" rx="12" fill="#e1ecfa"/>
+    <text x="398" y="251" font-size="23" font-weight="700">Agent terminal</text>
+    <text x="398" y="287" font-size="21" font-family="monospace">$ codex</text>
+    <text x="398" y="327" fill="#344d73" font-size="19">Implement the parser fix</text>
+    <rect x="676" y="214" width="260" height="115" rx="12" fill="#e7f3ef"/>
+    <text x="694" y="251" font-size="23" font-weight="700">Test shell</text>
+    <text x="694" y="287" fill="#37594d" font-size="19">Inspect the diff and test</text>
+    <rect x="676" y="343" width="260" height="115" rx="12" fill="#f3ecfa"/>
+    <text x="694" y="381" font-size="23" font-weight="700">Browser pane</text>
+    <text x="694" y="417" fill="#60466d" font-size="19" font-family="monospace">localhost:3000</text>
+  </g>
+</svg>
