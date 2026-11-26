@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="343" viewBox="0 0 700 343" role="img" aria-labelledby="title desc">
+  <title id="title">Two state tags for one native socket</title>
+  <desc id="desc">Before close s, s is tagged connected and refers to an open descriptor. After the call, both the retained s and the result refer to the same native socket object. Its descriptor is closed, but the old tag is still connected and the returned tag is closed.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 1L9 5 1 9" fill="none" stroke="#365a56" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="1" y="1" width="698" height="341" rx="15" fill="#fbfaf5" stroke="#c8d1ca"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#213437">
+    <text x="41" y="49" font-size="23" font-weight="700">Before the call</text>
+    <text x="330" y="49" font-size="23" font-weight="700">After the call</text>
+    <rect x="40" y="83" width="187" height="60" rx="9" fill="#e5efeb" stroke="#176f68"/>
+    <rect x="330" y="83" width="155" height="60" rx="9" fill="#e5efeb" stroke="#176f68"/>
+    <rect x="505" y="83" width="155" height="60" rx="9" fill="#f6eae2" stroke="#873e32"/>
+    <g font-size="17" font-weight="700">
+      <text x="55" y="107">Original handle</text>
+      <text x="345" y="107">Old handle s</text>
+      <text x="520" y="107">Returned handle</text>
+    </g>
+    <g font-family="Menlo, Consolas, monospace" font-size="17">
+      <text x="55" y="129" fill="#17635c">s : .connected</text>
+      <text x="345" y="129" fill="#17635c">.connected</text>
+      <text x="520" y="129" fill="#873e32">.closed</text>
+    </g>
+    <g fill="none" stroke="#365a56" stroke-width="1.8" marker-end="url(#arrow)">
+      <path d="M134 144V220"/>
+      <path d="M408 144V180L457 220"/>
+      <path d="M583 144V180L534 220"/>
+      <path d="M228 252H385"/>
+    </g>
+    <text x="306" y="242" text-anchor="middle" fill="#365a56" font-family="Menlo, Consolas, monospace" font-size="17">close s</text>
+    <rect x="40" y="224" width="187" height="64" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <rect x="388" y="224" width="215" height="64" rx="9" fill="#fff" stroke="#9aaba5"/>
+    <g text-anchor="middle">
+      <text x="134" y="250" font-size="18" font-weight="700">Native socket</text>
+      <text x="134" y="274" font-size="17" fill="#17635c">Descriptor open</text>
+      <text x="495" y="250" font-size="18" font-weight="700">Same native socket</text>
+      <text x="495" y="274" font-size="17" fill="#873e32">Descriptor closed</text>
+      <text x="495" y="317" font-size="17" fill="#425759">A second call using s still type-checks.</text>
+    </g>
+  </g>
+</svg>

@@ -15,6 +15,7 @@ import Site.Blog
 import Site.Embed
 import Site.Blog.PrefixScan
 import Site.Blog.SocketStateMachine
+import Site.Blog.SocketLifecycles
 import Site.Blog.Mamba3
 import Site.Blog.SignatureMethod
 import Site.Blog.NTK
@@ -30,6 +31,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
+      Site.Blog.SocketLifecycles
       Site.Blog.Herdr
       Site.Blog.InfraLean
       Site.Blog.AnomalyDetection
