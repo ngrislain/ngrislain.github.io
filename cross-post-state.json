@@ -1,40 +1,40 @@
 {
   "posts": {
     "blog/2026-3-13-reading-note-sequentialparallel-duality-in-prefix-scannable-models": {
-      "content_hash": "0edbb71f3ba7e085"
+      "content_hash": "d485a0a3696d62a0"
     },
     "blog/2026-3-25-zerocost-posix-compliance-encoding-the-socket-state-machine-in-lean-4s-type-system": {
-      "content_hash": "4d3f51f25dce2165"
+      "content_hash": "ecea79a0c7e33fd5"
     },
     "blog/2026-3-29-reading-note-mamba3-and-the-state-space-model-renaissance": {
-      "content_hash": "0c29bc18629d6187"
+      "content_hash": "dc2a255d7c4ee819"
     },
     "blog/2026-4-6-reading-note-the-signature-method-in-machine-learning": {
-      "content_hash": "018b22de186ed191"
+      "content_hash": "4b89e50bf024d698"
     },
     "projects/2025-11-8-teaching-3d-geometry-with-pyxel": {
-      "content_hash": "4d56f54eccab307e"
+      "content_hash": "f78ae12e752f060c"
     },
     "projects/2026-2-20-how-to-die-optimally--ai-meets-economics": {
-      "content_hash": "ad7e578feb9d1a8b"
+      "content_hash": "861c058cb8542619"
     },
     "projects/2026-3-12-dont-vibe--prove": {
-      "content_hash": "d91db02fd733675d"
+      "content_hash": "b0aaae6daa5b6017"
     },
     "blog/2026-5-7-reading-note-a-theory-of-deep-learning": {
-      "content_hash": "0edd4a28039aa630"
+      "content_hash": "eab5c4667e59bf09"
     },
     "blog/2026-5-7-reading-note-the-neural-tangent-kernel": {
-      "content_hash": "f1813cdc9671d72a"
+      "content_hash": "8d5d3e99c4956d3f"
     },
     "projects/2026-6-22-dont-vibe--constrain": {
       "content_hash": "66e6618da00ae0ee"
     },
     "projects/2026-6-22-vibe-under-constraint": {
-      "content_hash": "474705555aba7ca3"
+      "content_hash": "18f144866ef5756e"
     },
     "blog/2026-8-20-language-models-are-anomaly-detectors": {
-      "content_hash": "2df7c8456eff17da"
+      "content_hash": "4dc1e73f2385a937"
     },
     "blog/2026-9-6-terraform-in-lean-4-an-unrealisable-target-is-a-compile-error": {
       "content_hash": "55fb3c45b1d7ccea"
@@ -43,13 +43,16 @@
       "content_hash": "2c58e1dab2253ac4"
     },
     "blog/2026-9-6-like-terraform-but-in-lean-4": {
-      "content_hash": "8e159be2dc33485d"
+      "content_hash": "79cc9acca93023ef"
     },
     "blog/2026-11-26-herdr-a-place-for-coding-agents-to-keep-working": {
-      "content_hash": "92b1a44f05eb880f"
+      "content_hash": "41e6dec0a7650a9a"
     },
     "projects/2026-11-8-rgb-by-eye": {
-      "content_hash": "1173237322f03f51"
+      "content_hash": "ac6f2ddd5c1faf3c"
+    },
+    "blog/2026-11-26-why-lean-let-me-close-a-socket-twice": {
+      "content_hash": "205b99730b6bfcf8"
     }
   }
 }
