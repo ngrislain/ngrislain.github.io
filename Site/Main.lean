@@ -21,6 +21,7 @@ import Site.Blog.NTK
 import Site.Blog.Reservoir
 import Site.Blog.AnomalyDetection
 import Site.Blog.InfraLean
+import Site.Blog.Herdr
 
 open Verso Genre Blog Site Syntax
 
@@ -29,6 +30,7 @@ def personalSite : Site :=
     static "static" ← "static"
     "about" Site.About
     "blog" Site.Blog with
+      Site.Blog.Herdr
       Site.Blog.InfraLean
       Site.Blog.AnomalyDetection
       Site.Blog.Reservoir

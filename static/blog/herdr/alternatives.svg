@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="660" viewBox="0 0 1000 660" role="img" aria-labelledby="title desc">
+<title id="title">Choose a tool by the responsibility you want to hand over</title>
+<desc id="desc">Four overlapping choices: tmux and Zellij for persistent terminal sessions, Herdr for agent-aware runtime on your machines, cmux for a native Mac terminal and browser, Conductor for managed cloud agent sandboxes. This is not a ranking.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#176f68" stroke-width="1.5"/></marker></defs>
+<rect width="1000" height="660" rx="18" fill="#faf8f1"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="40" y="41" font-size="15" fill="#176f68" font-weight="700" letter-spacing="2" text-anchor="start">CHOOSING THE WORKING ENVIRONMENT</text>
+<text x="40" y="82" font-size="30" fill="#213437" font-weight="700" letter-spacing="0" text-anchor="start">Start with the responsibility.</text>
+<rect x="40" y="128" width="440" height="210" rx="12" fill="white" stroke="#c8d1ca" stroke-width="1.5"/>
+<text x="62" y="161" font-size="19" fill="#526366" font-weight="400" letter-spacing="0" text-anchor="start">Keep terminals alive</text>
+<text x="62" y="203" font-size="29" fill="#213437" font-weight="700" letter-spacing="0" text-anchor="start">tmux / Zellij</text>
+<text x="62" y="241" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Persistent sessions</text>
+<text x="62" y="271" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Layouts and scripting</text>
+<text x="62" y="301" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Bring your own agent workflow</text>
+<rect x="520" y="128" width="440" height="210" rx="12" fill="#e5efeb" stroke="#c8d1ca" stroke-width="1.5"/>
+<text x="542" y="161" font-size="19" fill="#526366" font-weight="400" letter-spacing="0" text-anchor="start">See which agent needs you</text>
+<text x="542" y="203" font-size="29" fill="#176f68" font-weight="700" letter-spacing="0" text-anchor="start">Herdr</text>
+<text x="542" y="241" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Agent state and control</text>
+<text x="542" y="271" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Persistent terminal runtime</text>
+<text x="542" y="301" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Run it on your machines</text>
+<rect x="40" y="366" width="440" height="210" rx="12" fill="white" stroke="#c8d1ca" stroke-width="1.5"/>
+<text x="62" y="399" font-size="19" fill="#526366" font-weight="400" letter-spacing="0" text-anchor="start">Work in a native Mac terminal</text>
+<text x="62" y="441" font-size="29" fill="#213437" font-weight="700" letter-spacing="0" text-anchor="start">cmux</text>
+<text x="62" y="479" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Tabs and attention signals</text>
+<text x="62" y="509" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">A programmable browser</text>
+<text x="62" y="539" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">SSH / tmux for remote work</text>
+<rect x="520" y="366" width="440" height="210" rx="12" fill="#f3e7cf" stroke="#c8d1ca" stroke-width="1.5"/>
+<text x="542" y="399" font-size="19" fill="#526366" font-weight="400" letter-spacing="0" text-anchor="start">Hand over cloud environments</text>
+<text x="542" y="441" font-size="29" fill="#8e5716" font-weight="700" letter-spacing="0" text-anchor="start">Conductor</text>
+<text x="542" y="479" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Managed agent sandboxes</text>
+<text x="542" y="509" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Desktop, mobile and API</text>
+<text x="542" y="539" font-size="20" fill="#213437" font-weight="400" letter-spacing="0" text-anchor="start">Less host setup to maintain</text>
+<text x="40" y="635" font-size="16" fill="#526366" font-weight="400" letter-spacing="0" text-anchor="start">03 / Overlapping tools. Different defaults. No universal winner.</text>
+</g></svg>
