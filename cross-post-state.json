@@ -44,6 +44,12 @@
     },
     "blog/2026-9-6-like-terraform-but-in-lean-4": {
       "content_hash": "8e159be2dc33485d"
+    },
+    "blog/2026-11-26-herdr-a-place-for-coding-agents-to-keep-working": {
+      "content_hash": "92b1a44f05eb880f"
+    },
+    "projects/2026-11-8-rgb-by-eye": {
+      "content_hash": "1173237322f03f51"
     }
   }
 }
